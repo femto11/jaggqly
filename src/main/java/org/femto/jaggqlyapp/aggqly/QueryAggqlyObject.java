@@ -11,7 +11,7 @@ interface Review {
 interface Show {
     String title();
 
-    @AggqlyJoin(expression = "/{l.id} = /{r.show_id}")
+    @AggqlyJoin(expression = "/{l:id} = /{r:show_id}")
     List<Review> reviews();
 }
 
@@ -20,6 +20,6 @@ interface Query {
     @AggqlyRoot()
     public List<Show> shows();
 
-    @AggqlyRoot(where = "/{t.title} = /{arg:title}")
+    @AggqlyRoot(where = "/{t:title} = /{arg:title}")
     public Show show();
 }

@@ -25,7 +25,7 @@ class JaggqlyappApplicationTests {
 		var c = ctx.containsBean("aggqlyDataLoaders");
 		var x = ctx.getBean("aggqlyDataLoaders", AggqlyDataLoaders.class);
 
-		var e = new JoinExpressionImpl("""
+		var e = JoinExpressionImpl.fromString("""
 				/{l:right_id} = /{r:id}
 				AND /{l:age} < /{arg:$.$.age}
 				""");

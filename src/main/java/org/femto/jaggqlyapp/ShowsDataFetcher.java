@@ -29,7 +29,7 @@ public class ShowsDataFetcher {
 
   @DgsQuery
   public Show show(DataFetchingEnvironment dfe) {
-    this.aggqly.execute(dfe);
+    System.out.println(this.aggqly.execute(dfe));
     return shows.get(0);
   }
 }

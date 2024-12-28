@@ -3,6 +3,7 @@ package org.femto.jaggqlyapp.aggqly;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
@@ -49,10 +50,10 @@ public class Aggqly {
     private Generated generateSelect(Parser.SelectNode node) {
         final var nodes = Generated.normalize(node.selections.stream().map(n -> this.generate(n)).toList());
 
-        var selectPart = "SELECT " + nodes.column;
-        var fromPart = "FROM " + "table";
-        var joinPart = nodes.join;
-        var wherePart = "where";
+        var selectPart = "SELECT " + nodes.column + " ";
+        var fromPart = "FROM " + node.table + " " + node.alias + " ";
+        var joinPart = nodes.join + " ";
+        var wherePart = !node.where.isEmpty() ? "WHERE " + node.where + " " : "";
 
         return new Generated(selectPart + fromPart + joinPart + wherePart, null, null);
     }
@@ -61,23 +62,17 @@ public class Aggqly {
         return new Generated(null, node.expression + " " + node.alias, null);
     }
 
-    private Generated generateJoin(Parser.JoinNode join) {
-
-        // final var nodes = Generated.normalize(join.selections.stream().map(node ->
-        // this.generate(node)).toList());
+    private Generated generateJoin(Parser.JoinNode node) {
+        var generated = generateSelect(node.selectNode);
 
         return new Generated(
                 null,
-                join.alias,
-                """
+                node.alias,
+                MessageFormat.format("""
                             OUTER APPLY (
-                                SELECT ${columns.join(', ')}
-                                FROM ${rightTable} AS ${rightTableAlias}
-                                ${joins.filter(exists).join()}
-                                WHERE ${join.expression}
-                                ${where ? `AND ${where}` : ''}
-                            ) FOR JSON PATH ${alias}
-                        """);
+                            {0}
+                            ) FOR JSON PATH {1}
+                        """, generated.statement, node.alias));
     }
 
     private record Generated(String statement, String column, String join) {
@@ -120,7 +115,13 @@ public class Aggqly {
 
             var selectionSet = this.dfe.getSelectionSet();
 
-            final var selectNode = parseSelect(0, returnType, Map.of(), selectionSet, aggqlyField.getWhere());
+            var arg0 = gqlField.getArguments().get(0);
+            var args = Map.of(arg0.getName(), new Object());
+            // .stream()
+            // .collect(Collector.unmodifiableMap(a -> a.getName(), a -> new Object()));
+
+            final var selectNode = parseSelect(0, returnType, args, selectionSet,
+                    aggqlyField.getWhere());
 
             return selectNode;
         }
@@ -155,11 +156,15 @@ public class Aggqly {
                     })
                     .toList();
 
+            final var argAliases = args.keySet()
+                    .stream()
+                    .collect(Collectors.toUnmodifiableMap(x -> x, x -> ':' + Parser.levelledAlias(x, level)));
+
             final var whereStatement = whereExpression != null
-                    ? whereExpression.method(tableAlias, Map.of(), Map.of())
+                    ? whereExpression.method(tableAlias, argAliases, Map.of())
                     : null;
 
-            return new SelectNode(selectionNodes, whereStatement);
+            return new SelectNode(tableName, tableAlias, selectionNodes, whereStatement);
         }
 
         private AstNode parseJoin(Integer level, String leftTableAlias, JoinField aggqlyField,
@@ -175,7 +180,7 @@ public class Aggqly {
         }
 
         private AstNode parseColumn(Integer level, String tableAlias, ColumnField aggqlyField) {
-            return new ColumnNode(aggqlyField.getName(), tableAlias + '_' + aggqlyField.getColumn());
+            return new ColumnNode(aggqlyField.getName(), tableAlias + '.' + aggqlyField.getColumn());
         }
 
         @SuppressWarnings({ "unchecked" })
@@ -195,7 +200,7 @@ public class Aggqly {
         public record DeathNode(@NotNull String alias) implements AstNode {
         };
 
-        public record SelectNode(List<AstNode> selections, String where)
+        public record SelectNode(String table, String alias, List<AstNode> selections, String where)
                 implements AstNode {
         };
 

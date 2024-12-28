@@ -20,7 +20,7 @@ public class JoinExpressionImpl implements JoinExpression {
         final var fragments = new ArrayList<String>();
         final var accessors = new ArrayList<Getter>();
 
-        var matches = pattern.matcher(expression).results().toList();
+        var matches = JoinExpressionImpl.pattern.matcher(expression).results().toList();
 
         var fragmentStart = 0;
         for (var match : matches) {
