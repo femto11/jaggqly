@@ -7,8 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AggqlyRoot {
-    public String name() default "";
-
-    public String where() default "";
+public @interface AggqlyExpression {
+    public String expression();
 }

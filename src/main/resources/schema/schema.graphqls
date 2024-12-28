@@ -1,5 +1,7 @@
 type Query {
     shows: [Show]
+
+    show(title: String!): Show
 }
 
 type Show {

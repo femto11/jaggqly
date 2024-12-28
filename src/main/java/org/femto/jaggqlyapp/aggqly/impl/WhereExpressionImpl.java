@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class WhereExpressionImpl {
+import org.femto.jaggqlyapp.aggqly.WhereExpression;
+
+public class WhereExpressionImpl implements WhereExpression {
     private static Pattern pattern = ExpressionRegEx.buildPattern(new String[] {
             ExpressionRegEx.tableFragment,
             ExpressionRegEx.argFragment,
@@ -50,7 +52,7 @@ public class WhereExpressionImpl {
 
     @FunctionalInterface
     interface Getter {
-        String method(String table, Map<String, Object> args, Map<String, Object> ctx);
+        String method(String table, Map<String, String> args, Map<String, String> ctx);
     }
 
     @SuppressWarnings({ "unused" })
@@ -73,7 +75,7 @@ public class WhereExpressionImpl {
     }
 
     // @Override
-    public String method(String table, Map<String, Object> args, Map<String, Object> ctx) {
+    public String method(String table, Map<String, String> args, Map<String, String> ctx) {
         var sb = new StringBuilder();
 
         for (var i = 0; i < this.fragments.size(); i++) {

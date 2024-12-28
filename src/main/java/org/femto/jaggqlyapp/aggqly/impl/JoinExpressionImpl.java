@@ -16,17 +16,13 @@ public class JoinExpressionImpl implements JoinExpression {
             ExpressionRegEx.ctxFragment
     });
 
-    private final List<String> fragments;
-
-    private final List<Getter> accessors;
-
-    public JoinExpressionImpl(String expression) {
-        super();
-
+    public static JoinExpression fromString(String expression) {
         final var fragments = new ArrayList<String>();
         final var accessors = new ArrayList<Getter>();
-        var fragmentStart = 0;
+
         var matches = pattern.matcher(expression).results().toList();
+
+        var fragmentStart = 0;
         for (var match : matches) {
             for (var group : match.namedGroups().keySet()) {
                 if (match.group(group) != null) {
@@ -48,13 +44,21 @@ public class JoinExpressionImpl implements JoinExpression {
             fragmentStart = match.end();
         }
 
+        return new JoinExpressionImpl(fragments, accessors);
+    }
+
+    private final List<String> fragments;
+
+    private final List<Getter> accessors;
+
+    private JoinExpressionImpl(List<String> fragments, List<Getter> accessors) {
         this.fragments = Collections.unmodifiableList(fragments);
         this.accessors = Collections.unmodifiableList(accessors);
     }
 
     @FunctionalInterface
     interface Getter {
-        String method(String ltable, String rtable, Map<String, Object> args, Map<String, Object> ctx);
+        String method(String ltable, String rtable, Map<String, String> args, Map<String, String> ctx);
     }
 
     @SuppressWarnings({ "unused" })
@@ -68,21 +72,21 @@ public class JoinExpressionImpl implements JoinExpression {
     };
 
     @SuppressWarnings({ "unused" })
-    private Getter argGetter(String name) {
+    private static Getter argGetter(String name) {
         return (ltable, rtable, args, ctx) -> {
             return args.containsKey(name) ? args.get(name).toString() : "unknown";
         };
     }
 
     @SuppressWarnings({ "unused" })
-    private Getter ctxGetter(String name) {
+    private static Getter ctxGetter(String name) {
         return (ltable, rtable, args, ctx) -> {
             return args.containsKey(name) ? ctx.get(name).toString() : "unknown";
         };
     }
 
     @Override
-    public String method(String ltable, String rtable, Map<String, Object> args, Map<String, Object> ctx) {
+    public String method(String ltable, String rtable, Map<String, String> args, Map<String, String> ctx) {
         var sb = new StringBuilder();
 
         for (var i = 0; i < this.fragments.size(); i++) {

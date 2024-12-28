@@ -75,6 +75,13 @@ final class AggqlyInterfaceScanRegistrar
                             .table(typeConfig.table())
                             .selectAlways(typeConfig.selectAlways());
 
+                    for (var method : aggqlyType.getDeclaredMethods()) {
+                        final var root = method.getAnnotation(AggqlyRoot.class);
+                        if (root != null) {
+                            builder.root(RootField.fromAnnotation(method.getName(), root));
+                        }
+                    }
+
                     Arrays.stream(aggqlyType.getDeclaredMethods())
                             .map(method -> {
                                 final var returnType = method.getReturnType();

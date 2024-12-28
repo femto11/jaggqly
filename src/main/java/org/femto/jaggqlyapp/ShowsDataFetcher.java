@@ -26,6 +26,12 @@ public class ShowsDataFetcher {
     this.aggqly.execute(dfe);
     return shows;
   }
+
+  @DgsQuery
+  public Show show(DataFetchingEnvironment dfe) {
+    this.aggqly.execute(dfe);
+    return shows.get(0);
+  }
 }
 
 record Review(String text) {

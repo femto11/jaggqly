@@ -1,17 +1,22 @@
 package org.femto.jaggqlyapp.aggqly;
 
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.event.KeyValuePair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.DataFetchingFieldSelectionSet;
+import graphql.schema.DataFetchingFieldSelectionSetImpl;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.SelectedField;
 
@@ -44,13 +49,12 @@ public class Aggqly {
     private Generated generateSelect(Parser.SelectNode node) {
         final var nodes = Generated.normalize(node.selections.stream().map(n -> this.generate(n)).toList());
 
-        return new Generated(
-                """
-                                SELECT columns
-                                FROM table
-                                ...joins
-                                WHERE where
-                        """, null, null);
+        var selectPart = "SELECT " + nodes.column;
+        var fromPart = "FROM " + "table";
+        var joinPart = nodes.join;
+        var wherePart = "where";
+
+        return new Generated(selectPart + fromPart + joinPart + wherePart, null, null);
     }
 
     private Generated generateColumn(Parser.ColumnNode node) {
@@ -58,7 +62,9 @@ public class Aggqly {
     }
 
     private Generated generateJoin(Parser.JoinNode join) {
-        final var nodes = Generated.normalize(join.selections.stream().map(node -> this.generate(node)).toList());
+
+        // final var nodes = Generated.normalize(join.selections.stream().map(node ->
+        // this.generate(node)).toList());
 
         return new Generated(
                 null,
@@ -93,69 +99,83 @@ public class Aggqly {
         }
 
         public SelectNode run() {
-            var args = this.dfe.getArguments();
-            var selectionSet = this.dfe.getSelectionSet();
             var returnType = Parser.<GraphQLObjectType>MaybeUnwrapGraphQLListType(this.dfe.getFieldType());
-
-            if (returnType instanceof GraphQLObjectType) {
-                final var selections = iterate(1, (GraphQLObjectType) returnType, args, selectionSet);
-                return new SelectNode(selections);
+            if (!(returnType instanceof GraphQLObjectType)) {
+                return null;
             }
 
-            return null;
+            final var aggqlyParentType = loaders.getType(((GraphQLObjectType) dfe.getParentType()).getName());
+
+            final var aggqlyType = loaders.getType(((GraphQLObjectType) dfe.getFieldType()).getName());
+            if (aggqlyType == null) {
+                return null;
+            }
+
+            final var gqlField = this.dfe.getField();
+
+            final var aggqlyField = aggqlyParentType.getRoot(gqlField.getName());
+            if (aggqlyField == null) {
+                return null;
+            }
+
+            var selectionSet = this.dfe.getSelectionSet();
+
+            final var selectNode = parseSelect(0, returnType, Map.of(), selectionSet, aggqlyField.getWhere());
+
+            return selectNode;
         }
 
-        private List<AstNode> iterate(Integer level, GraphQLObjectType returnType, Map<String, Object> args,
-                DataFetchingFieldSelectionSet selectionSet) {
-            final var aggqlyType = loaders.getType(returnType.getName());
+        private SelectNode parseSelect(Integer level, GraphQLObjectType gqlType, Map<String, Object> args,
+                DataFetchingFieldSelectionSet selectionSet, WhereExpression whereExpression) {
 
-            return selectionSet.getImmediateFields()
+            final var aggqlyType = loaders.getType(gqlType.getName());
+
+            final var tableName = aggqlyType.getTable();
+            final var tableAlias = Parser.levelledAlias(tableName, level);
+
+            final var selectionNodes = selectionSet.getImmediateFields()
                     .stream()
-                    .map(field -> {
-                        var aggqlyField = aggqlyType.getField(field.getName());
+                    .map(gqlField -> {
+                        final var aggqlySelectedField = aggqlyType.getField(gqlField.getName());
 
-                        return switch (aggqlyField) {
-                            case JoinField joinField -> parseJoin(level, aggqlyType, field, joinField);
-                            case ColumnField columnField -> parseColumn(level, aggqlyType, field, columnField);
-                            default -> (AstNode) new Parser.DeathNode("Foo");
-                        };
-                    }).toList();
+                        switch (aggqlySelectedField) {
+                            case JoinField joinField -> {
+                                return this.parseJoin(level, tableAlias, joinField,
+                                        gqlField.getArguments(),
+                                        gqlField.getType(),
+                                        gqlField.getSelectionSet());
+                            }
+                            case ColumnField columnField -> {
+                                return parseColumn(level, tableAlias, columnField);
+                            }
+                            default -> {
+                                return new DeathNode("");
+                            }
+                        }
+                    })
+                    .toList();
+
+            final var whereStatement = whereExpression != null
+                    ? whereExpression.method(tableAlias, Map.of(), Map.of())
+                    : null;
+
+            return new SelectNode(selectionNodes, whereStatement);
         }
 
-        private AstNode parseColumn(Integer level, AggqlyObject aggqlyType, SelectedField gqlField,
-                ColumnField aggqlyField) {
-            var tableAlias = Parser.levelledAlias(aggqlyType.getTable(), level);
+        private AstNode parseJoin(Integer level, String leftTableAlias, JoinField aggqlyField,
+                Map<String, Object> args,
+                GraphQLOutputType rightRawGqlType, DataFetchingFieldSelectionSet selectionSet) {
 
-            // TODO: create the expression in the generator or provide an expression lambda
-            // in ColumnField
-            return new Parser.ColumnNode(tableAlias + '.' + ((ColumnField) aggqlyField).column,
-                    gqlField.getName());
+            final var rightGqlType = Parser.<GraphQLObjectType>MaybeUnwrapGraphQLListType(rightRawGqlType);
 
+            final var selectNode = this.parseSelect(level + 1, rightGqlType, args, selectionSet,
+                    (a, b, c) -> aggqlyField.getExpression().method(leftTableAlias, a, b, c));
+
+            return new JoinNode(aggqlyField.getName(), selectNode);
         }
 
-        private AstNode parseJoin(Integer level, AggqlyObject aggqlyType, SelectedField gqlField,
-                JoinField aggqlyField) {
-            var gqlChildType = Parser.<GraphQLObjectType>MaybeUnwrapGraphQLListType(gqlField.getType());
-
-            var aggqlyJoinField = (JoinField) aggqlyField;
-            var aggqlyJoinedType = loaders.getType(gqlChildType.getName());
-
-            final var leftTableAlias = Parser.levelledAlias(aggqlyType.getTable(), level);
-            final var rightTableAlias = Parser.levelledAlias(aggqlyJoinedType.getTable(), level + 1);
-
-            // TODO: arguments
-            // 'arguments' in selection && selection.arguments?.forEach(arg => {
-            // paramValues[arg.name.value] = arg.value;
-            // paramRegistry[arg.name.value] = `:${levelledAlias(arg.name.value, level)}_${i
-            // + 1}`
-            // })
-
-            final var expression = aggqlyJoinField.getExpression().method(leftTableAlias,
-                    rightTableAlias, Map.of(), Map.of());
-
-            final var ast = iterate(level + 1, gqlChildType, Map.of(), gqlField.getSelectionSet());
-
-            return (AstNode) new Parser.JoinNode(gqlField.getName(), expression, ast);
+        private AstNode parseColumn(Integer level, String tableAlias, ColumnField aggqlyField) {
+            return new ColumnNode(aggqlyField.getName(), tableAlias + '_' + aggqlyField.getColumn());
         }
 
         @SuppressWarnings({ "unchecked" })
@@ -175,11 +195,11 @@ public class Aggqly {
         public record DeathNode(@NotNull String alias) implements AstNode {
         };
 
-        public record SelectNode(List<AstNode> selections)
+        public record SelectNode(List<AstNode> selections, String where)
                 implements AstNode {
         };
 
-        public record JoinNode(@NotNull String alias, @NotNull String expression, List<AstNode> selections)
+        public record JoinNode(@NotNull String alias, SelectNode selectNode)
                 implements AstNode {
         };
 

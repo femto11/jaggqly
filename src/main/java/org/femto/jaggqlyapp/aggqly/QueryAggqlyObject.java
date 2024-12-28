@@ -19,4 +19,7 @@ interface Show {
 interface Query {
     @AggqlyRoot()
     public List<Show> shows();
+
+    @AggqlyRoot(where = "/{t.title} = /{arg:title}")
+    public Show show();
 }

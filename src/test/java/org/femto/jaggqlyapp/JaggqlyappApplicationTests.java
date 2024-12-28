@@ -39,16 +39,37 @@ class JaggqlyappApplicationTests {
 	void gqlQueryTest() {
 		var r = dgsQueryExecutor.execute("""
 					query {
-						shows {
-							...showFields
+						show(title: "LAST HOPE") {
+							title,
+							reviews {
+								text
+							}
 						}
 					}
-					fragment showFields on Show {
-						title, reviews { text }
-					}
 				""");
+
+		var sql = """
+				|	SELECT shows_0.title, reviews
+				|	FROM shows_0
+				|	|	OUTER APPLY (
+				|	|	|	SELECT reviews_1.text
+				|	|	|	FROM reviews_1
+				|	|	|	WHERE shows_0.review_id = reviews_1.id
+				|	|	|	  AND (reviews_1.stars >= :minStars_1 OR ... AND ...) <- join expression reviews(minStars)
+				|	|	|	ORDER BY x, y, z
+				|	|	) FOR JSON PATH reviews
+				|	WHERE shows_0.title = :title_0 <- where statement shows(title)
+					""";
 
 		System.out.println(r);
 	}
 
+	// SelectNode (Table, (ColumnNode|JoinNode|JunctionNode)[], WhereNode,
+	// OrderNode[])
+	// JoinNode (Alias, SelectNode)
+
+	// parseJoin(alias, gqlType, aggqlyType, gqlSelectionSet, JoinExpression)
+
+	// parseSelect(gqlType, aggqlyType, gqlSelectionSet, WhereExpression,
+	// OrderExpression)
 }

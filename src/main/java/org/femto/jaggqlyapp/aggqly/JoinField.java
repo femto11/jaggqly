@@ -17,7 +17,7 @@ public final class JoinField implements AggqlyField {
     public static JoinField fromAnnotation(
             @NotNull String name,
             @NotNull AggqlyJoin annotation) {
-        final var expression = new JoinExpressionImpl(annotation.expression());
+        final var expression = JoinExpressionImpl.fromString(annotation.expression());
         return new JoinField(name, expression);
     }
 

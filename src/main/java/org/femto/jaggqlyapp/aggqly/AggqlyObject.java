@@ -10,18 +10,21 @@ public final class AggqlyObject {
     public final Optional<String[]> selectAlwaysNames;
     public final Optional<WhereExpression> whereExpression;
     public final Map<String, AggqlyField> fields;
+    private final Map<String, RootField> roots;
 
     private AggqlyObject(
             String typeName,
             String tableName,
             Optional<String[]> selectAlwaysNames,
             Optional<WhereExpression> whereExpression,
-            final Map<String, AggqlyField> fields) {
+            final Map<String, AggqlyField> fields,
+            final Map<String, RootField> roots) {
         this.typeName = typeName;
         this.tableName = tableName;
         this.selectAlwaysNames = selectAlwaysNames;
         this.whereExpression = whereExpression;
         this.fields = fields;
+        this.roots = roots;
     }
 
     public String getTable() {
@@ -32,6 +35,10 @@ public final class AggqlyObject {
         return this.fields.get(name);
     }
 
+    public RootField getRoot(String name) {
+        return this.roots.get(name);
+    }
+
     public static class Builder {
 
         private String typeName;
@@ -39,10 +46,12 @@ public final class AggqlyObject {
         private Optional<String[]> selectAlwaysNames;
         private Optional<WhereExpression> whereExpression;
         private final Map<String, AggqlyField> fields;
+        private final Map<String, RootField> roots;
 
         public Builder(final String typeName) {
             this.typeName = typeName;
             this.fields = new HashMap<>();
+            this.roots = new HashMap<>();
         }
 
         public Builder table(final String name) {
@@ -65,8 +74,13 @@ public final class AggqlyObject {
             return this;
         }
 
+        public Builder root(RootField field) {
+            this.roots.put(field.getName(), field);
+            return this;
+        }
+
         public AggqlyObject build() {
-            return new AggqlyObject(typeName, tableName, selectAlwaysNames, whereExpression, fields);
+            return new AggqlyObject(typeName, tableName, selectAlwaysNames, whereExpression, fields, roots);
         }
     }
 }
