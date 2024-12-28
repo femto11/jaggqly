@@ -1,0 +1,13 @@
+type Query {
+    shows: [Show]
+}
+
+type Show {
+    title: String
+    releaseYear: Int
+    reviews: [Review]
+}
+
+type Review {
+    text: String
+}
