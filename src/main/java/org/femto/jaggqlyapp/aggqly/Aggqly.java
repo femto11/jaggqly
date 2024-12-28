@@ -59,7 +59,7 @@ public class Aggqly {
     }
 
     private Generated generateColumn(Parser.ColumnNode node) {
-        return new Generated(null, node.expression + " " + node.alias, null);
+        return new Generated(null, node.expression + " " + sqlId(node.alias) + "", null);
     }
 
     private Generated generateJoin(Parser.JoinNode node) {
@@ -67,12 +67,12 @@ public class Aggqly {
 
         return new Generated(
                 null,
-                node.alias,
+                sqlId(node.alias),
                 MessageFormat.format("""
                             OUTER APPLY (
                             {0}
                             ) FOR JSON PATH {1}
-                        """, generated.statement, node.alias));
+                        """, generated.statement, sqlId(node.alias)));
     }
 
     private record Generated(String statement, String column, String join) {
@@ -84,6 +84,10 @@ public class Aggqly {
             return new Generated(null, columns, joins);
         }
     };
+
+    private static String sqlId(@NotNull String id) {
+        return "\"" + id + "\"";
+    }
 
     private class Parser {
 
