@@ -7,9 +7,18 @@ type Query {
 type Show {
     title: String
     releaseYear: Int
-    reviews: [Review]
+    reviews(minRating: Int): [Review]
 }
 
-type Review {
-    text: String
+interface Review {
+    rating: Int
+}
+
+type ShortReview implements Review {
+    rating: Int
+}
+
+type FullReview implements Review {
+    rating: Int
+    comment: String
 }

@@ -2,16 +2,28 @@ package org.femto.jaggqlyapp.aggqly;
 
 import java.util.List;
 
-@AggqlyType(name = "Review", table = "review")
+@AggqlyType(name = "Review", table = "")
 interface Review {
-    String text();
+    Integer rating();
+}
+
+@AggqlyType(name = "FullReview", table = "full_review")
+interface FullReview extends Review {
+    Integer rating();
+
+    String comment();
+}
+
+@AggqlyType(name = "ShortReview", table = "simple_review")
+interface ShortReview extends Review {
+    Integer rating();
 }
 
 @AggqlyType(name = "Show", table = "show")
 interface Show {
     String title();
 
-    @AggqlyJoin(expression = "/{l:id} = /{r:show_id}")
+    @AggqlyJoin(expression = "/{l:show_id} = /{r:show_id}")
     List<Review> reviews();
 }
 

@@ -38,15 +38,21 @@ class JaggqlyappApplicationTests {
 	@Test
 	void gqlQueryTest() {
 		var r = dgsQueryExecutor.execute("""
-					query {
-						show(title: "LAST HOPE") {
+					query shows($minRating: Int) {
+						shows {
 							title,
-							reviews {
-								text
+							reviews(minRating: $minRating) {
+								... on ShortReview {
+									rating
+								}
+								... on FullReview {
+									rating
+									comment
+								}
 							}
 						}
 					}
-				""");
+				""", Map.of("minRating", 3));
 
 		var sql = """
 				|	SELECT shows_0.title, reviews
