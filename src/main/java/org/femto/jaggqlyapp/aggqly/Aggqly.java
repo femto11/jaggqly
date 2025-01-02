@@ -179,6 +179,9 @@ public class Aggqly {
                                         gqlField.getType(),
                                         gqlField.getSelectionSet());
                             }
+                            case ComputedField computedField -> {
+                                return parseComputed(level, tableAlias, computedField);
+                            }
                             case ColumnField columnField -> {
                                 return parseColumn(level, tableAlias, columnField);
                             }
@@ -249,6 +252,10 @@ public class Aggqly {
             return new InterfaceNode("", selectNodes);
         }
 
+        private AstNode parseComputed(Integer level, String tableAlias, ComputedField aggqlyField) {
+            return new ColumnNode(aggqlyField.getName(), aggqlyField.getFunction().get(tableAlias, Map.of(), Map.of()));
+        }
+
         private AstNode parseColumn(Integer level, String tableAlias, ColumnField aggqlyField) {
             return new ColumnNode(aggqlyField.getName(), tableAlias + '.' + aggqlyField.getColumn());
         }
@@ -262,10 +269,6 @@ public class Aggqly {
                 }
             }
         }
-
-        // private Map<String, String> RegisterParameters(Map<String, Object> input) {
-
-        // }
 
         @SuppressWarnings({ "unchecked" })
         private static <T extends GraphQLType> T MaybeUnwrapGraphQLListType(GraphQLType type) {

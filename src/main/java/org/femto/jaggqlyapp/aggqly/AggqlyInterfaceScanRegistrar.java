@@ -103,6 +103,11 @@ final class AggqlyInterfaceScanRegistrar
                                     System.out.println(returnType);
                                 }
 
+                                final var computed = method.getAnnotation(AggqlyComputed.class);
+                                if (computed != null) {
+                                    return ColumnField.fromName(method.getName());
+                                }
+
                                 final var column = method.getAnnotation(AggqlyColumn.class);
                                 if (column != null) {
                                     return ColumnField.fromAnnotation(method.getName(), column);
