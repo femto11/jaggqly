@@ -14,7 +14,7 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
         return (t, args, ctx) -> {
             var sb = new StringBuilder();
             for (var g : innerGetters) {
-                sb.append(g.get(l, r, args, ctx));
+                sb.append(g.get(t, args, ctx));
             }
             return sb.toString();
         };
@@ -37,7 +37,7 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
         WhereFunction inner = (t, args, ctx) -> {
             var sb = new StringBuilder();
             for (var g : innerGetters) {
-                sb.append(g.get(l, r, args, ctx));
+                sb.append(g.get(t, args, ctx));
             }
             return sb.toString();
         };
