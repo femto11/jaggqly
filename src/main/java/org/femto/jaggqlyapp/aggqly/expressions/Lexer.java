@@ -15,6 +15,7 @@ enum TokenKind {
     CLOSEPAREN,
     DOT,
     DOLLAR,
+    T,
     L,
     M,
     R,
@@ -25,7 +26,7 @@ enum TokenKind {
 }
 
 enum TokenClass {
-    NOTAPPLICABLE, CONTAINER
+    NOTAPPLICABLE, COLLECTION
 }
 
 public class Lexer {
@@ -46,6 +47,7 @@ public class Lexer {
             Map.entry(TokenKind.EXCLAMATIONMARK, LexerContext.Directive),
             Map.entry(TokenKind.OPENPAREN, LexerContext.Identifier),
             Map.entry(TokenKind.CLOSEPAREN, LexerContext.Body),
+            Map.entry(TokenKind.T, LexerContext.Directive),
             Map.entry(TokenKind.L, LexerContext.Directive),
             Map.entry(TokenKind.M, LexerContext.Directive),
             Map.entry(TokenKind.R, LexerContext.Directive),
@@ -62,7 +64,6 @@ public class Lexer {
         var token = nextToken(LexerContext.Body);
         tokens.add(token);
         while (token.kind != TokenKind.EOS) {
-            System.out.println(token + " -> " + tokenContext.get(token.kind));
             token = nextToken(tokenContext.get(token.kind));
             tokens.add(token);
         }
@@ -70,8 +71,6 @@ public class Lexer {
     }
 
     public Token nextToken(LexerContext context) {
-        int start = stream.at();
-
         if (stream.peek() == 0) {
             return new Token(TokenKind.EOS, TokenClass.NOTAPPLICABLE, null);
         }
@@ -141,8 +140,6 @@ public class Lexer {
     }
 
     private Token scanDirectiveContext() {
-        int start = stream.at();
-
         while (Character.isWhitespace(stream.peek())) {
             stream.eat();
         }
@@ -171,7 +168,7 @@ public class Lexer {
                         && this.stream.peek(2) == 'g'
                         && !Character.isLetterOrDigit(stream.peek(3))) {
                     stream.eat(3);
-                    return new Token(TokenKind.ARG, TokenClass.CONTAINER, null);
+                    return new Token(TokenKind.ARG, TokenClass.COLLECTION, null);
                 }
                 break;
             case 'c':
@@ -179,25 +176,31 @@ public class Lexer {
                         && this.stream.peek(2) == 'x'
                         && !Character.isLetterOrDigit(stream.peek(3))) {
                     stream.eat(3);
-                    return new Token(TokenKind.CTX, TokenClass.CONTAINER, null);
+                    return new Token(TokenKind.CTX, TokenClass.COLLECTION, null);
+                }
+                break;
+            case 't':
+                if (!Character.isLetterOrDigit(stream.peek(1))) {
+                    stream.eat();
+                    return new Token(TokenKind.L, TokenClass.COLLECTION, null);
                 }
                 break;
             case 'l':
                 if (!Character.isLetterOrDigit(stream.peek(1))) {
                     stream.eat();
-                    return new Token(TokenKind.L, TokenClass.CONTAINER, null);
+                    return new Token(TokenKind.L, TokenClass.COLLECTION, null);
                 }
                 break;
             case 'm':
                 if (!Character.isLetterOrDigit(stream.peek(1))) {
                     stream.eat();
-                    return new Token(TokenKind.M, TokenClass.CONTAINER, null);
+                    return new Token(TokenKind.M, TokenClass.COLLECTION, null);
                 }
                 break;
             case 'r':
                 if (!Character.isLetterOrDigit(stream.peek(1))) {
                     stream.eat();
-                    return new Token(TokenKind.R, TokenClass.CONTAINER, null);
+                    return new Token(TokenKind.R, TokenClass.COLLECTION, null);
                 }
                 break;
         }

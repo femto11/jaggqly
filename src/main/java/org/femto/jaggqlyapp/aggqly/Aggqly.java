@@ -212,7 +212,7 @@ public class Aggqly {
             final var unwrappedGqlType = Parser.MaybeUnwrapGraphQLListType(rightRawGqlType);
 
             final WhereExpression preparedJoinExpression = (a, b, c) -> aggqlyField.getExpression()
-                    .method(leftTableAlias, a, b, c);
+                    .get(leftTableAlias, a, b, c);
 
             final AstNode selectNode = switch (unwrappedGqlType) {
                 case GraphQLInterfaceType interfaceType ->

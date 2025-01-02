@@ -21,6 +21,7 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public WhereFunction visit(FragmentNode node) {
         return (t, args, ctx) -> node.text().toString();
     }
@@ -46,8 +47,14 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
     }
 
     @Override
-    public WhereFunction visit(LTableCollectionNode node) {
+    @SuppressWarnings("unused")
+    public WhereFunction visit(TTableCollectionNode node) {
         return (t, args, ctx) -> t + "." + node.member();
+    }
+
+    @Override
+    public WhereFunction visit(LTableCollectionNode node) {
+        throw new NotImplementedException();
     }
 
     @Override
@@ -61,11 +68,13 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public WhereFunction visit(ArgCollectionNode node) {
         return (t, args, ctx) -> args.get(node.member());
     }
 
     @Override
+    @SuppressWarnings("unused")
     public WhereFunction visit(CtxCollectionNode node) {
         return (t, args, ctx) -> ctx.get(node.member());
     }

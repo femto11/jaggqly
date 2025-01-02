@@ -1,15 +1,29 @@
 package org.femto.jaggqlyapp.aggqly;
 
-import java.util.Optional;
-
 public final class ColumnField implements AggqlyField {
+
     public static ColumnField fromName(String name) {
+        // return new ColumnField(name, (t, args, ctx) -> t + "." + name);
         return new ColumnField(name, name);
     }
 
-    public static ColumnField fromAnnotation(AggqlyColumn annotation) {
-        return new ColumnField("Foo", "Bar");
+    public static ColumnField fromAnnotation(String name, AggqlyColumn annotation) {
+        return annotation.column().isEmpty()
+                ? new ColumnField(name, name)
+                : new ColumnField(name, annotation.column());
     }
+
+    // @SuppressWarnings("unused")
+    // public static ColumnField fromAnnotation(String name, AggqlyColumn
+    // annotation) {
+    // WhereFunction definingFunction = annotation.expression().isEmpty()
+    // ? annotation.column().isEmpty()
+    // ? (t, args, ctx) -> t + "." + name
+    // : (t, args, ctx) -> t + "." + annotation.column()
+    // : WhereFunction.fromExpression(annotation.expression());
+
+    // return new ColumnField(name, definingFunction);
+    // }
 
     public final String name;
     public final String column;
@@ -24,25 +38,6 @@ public final class ColumnField implements AggqlyField {
     }
 
     public String getColumn() {
-        return column;
-    }
-
-    public static class Builder {
-        private String name;
-        private Optional<String> columnName;
-
-        public Builder(String name) {
-            this.name = name;
-            this.columnName = Optional.empty();
-        }
-
-        public Builder column(String name) {
-            this.columnName = Optional.of(name);
-            return this;
-        }
-
-        public ColumnField build() {
-            return new ColumnField(name, columnName.orElse(name));
-        }
+        return this.column;
     }
 }

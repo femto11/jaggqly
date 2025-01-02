@@ -1,9 +1,7 @@
 package org.femto.jaggqlyapp.aggqly.expressions;
 
-import java.lang.classfile.components.ClassPrinter.Node;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 // {?arg:jjjkgj AND COALESCE({arg:jjkgj}, 0) = 1}
 
@@ -37,6 +35,13 @@ record ConditionalNode(CollectionNode accessNode, List<TopLevelAstNode> innerNod
 
 interface CollectionNode extends DirectiveNode {
     String member();
+}
+
+record TTableCollectionNode(String member) implements CollectionNode {
+    @Override
+    public <T> T accept(NodeVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }
 
 record LTableCollectionNode(String member) implements CollectionNode {
@@ -170,19 +175,8 @@ public class Parser {
         return parseCollection();
     }
 
-    // memberaccess
-    // : collection identifier
-    // ;
-    private MemberAccessorNode parseMemberAccess() {
-
-        final var collectionNode = this.parseCollection();
-        final var identifierNode = this.parseIdentifier();
-
-        return new MemberAccessorNode(collectionNode, identifierNode);
-    }
-
     private CollectionNode parseCollection() {
-        if (this.stream.peek().clazz() != TokenClass.CONTAINER) {
+        if (this.stream.peek().clazz() != TokenClass.COLLECTION) {
             // Error based on token
             return null;
         }
@@ -208,6 +202,7 @@ public class Parser {
         this.stream.eat();
 
         return switch (collection) {
+            case TokenKind.T -> new TTableCollectionNode(member);
             case TokenKind.L -> new LTableCollectionNode(member);
             case TokenKind.M -> new MTableCollectionNode(member);
             case TokenKind.R -> new RTableCollectionNode(member);

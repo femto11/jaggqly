@@ -3,7 +3,7 @@ package org.femto.jaggqlyapp;
 import java.util.Map;
 
 import org.femto.jaggqlyapp.aggqly.AggqlyDataLoaders;
-import org.femto.jaggqlyapp.aggqly.expressions.Emitter;
+import org.femto.jaggqlyapp.aggqly.expressions.JoinEmitter;
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
 import org.femto.jaggqlyapp.aggqly.expressions.Parser;
 import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
@@ -14,10 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 import com.netflix.graphql.dgs.DgsQueryExecutor;
-
-import graphql.org.antlr.v4.runtime.CharStream;
-import graphql.org.antlr.v4.runtime.CharStreams;
-import graphql.org.antlr.v4.runtime.CommonTokenStream;
 
 @SpringBootTest
 class JaggqlyappApplicationTests {
@@ -49,7 +45,7 @@ class JaggqlyappApplicationTests {
 		var lexer = new Lexer();
 		var tokens = lexer.tokenize(input);
 		var nodes = new Parser().parse(new TokenStream(tokens));
-		var expression = new Emitter().emit(nodes);
+		var expression = new JoinEmitter().emit(nodes);
 
 		var x = expression.get("ltab", "rtab", Map.of("id", "1"), Map.of());
 		System.out.println(x);

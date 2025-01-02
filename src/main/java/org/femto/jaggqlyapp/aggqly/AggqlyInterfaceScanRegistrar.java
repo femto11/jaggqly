@@ -16,6 +16,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.StandardAnnotationMetadata;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
@@ -25,17 +26,18 @@ final class AggqlyInterfaceScanRegistrar
     private ResourceLoader resourceLoader;
 
     @Override
-    public void setEnvironment(Environment environment) {
+    public void setEnvironment(@NonNull Environment environment) {
         this.environment = environment;
     }
 
     @Override
-    public void setResourceLoader(ResourceLoader resourceLoader) {
+    public void setResourceLoader(@NonNull ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
     @Override
-    public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
+    public void registerBeanDefinitions(@NonNull AnnotationMetadata metadata,
+            @NonNull BeanDefinitionRegistry registry) {
         Map<String, Object> annotationAttributes = metadata
                 .getAnnotationAttributes(AggqlyInterfaceScan.class.getCanonicalName());
 
@@ -50,7 +52,7 @@ final class AggqlyInterfaceScanRegistrar
             final var provider = new ClassPathScanningCandidateComponentProvider(
                     false, environment) {
                 @Override
-                protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
+                protected boolean isCandidateComponent(@NonNull AnnotatedBeanDefinition beanDefinition) {
                     AnnotationMetadata metadata = beanDefinition.getMetadata();
                     return metadata.isIndependent() && metadata.isInterface();
                 }
@@ -89,8 +91,6 @@ final class AggqlyInterfaceScanRegistrar
                                 if (returnType.getName() == "java.util.List") {
                                     var gi = returnType.getGenericInterfaces()[0];
                                     var it = ((ParameterizedType) gi).getActualTypeArguments()[0];
-
-                                    var clazz = it.getClass();
                                 }
 
                                 final var join = method.getAnnotation(AggqlyJoin.class);
@@ -105,10 +105,10 @@ final class AggqlyInterfaceScanRegistrar
 
                                 final var column = method.getAnnotation(AggqlyColumn.class);
                                 if (column != null) {
-                                    System.out.println(returnType);
+                                    return ColumnField.fromAnnotation(method.getName(), column);
                                 }
 
-                                return new ColumnField.Builder(method.getName()).build();
+                                return ColumnField.fromName(method.getName());
                             })
                             .forEach(field -> {
                                 builder.field(field);

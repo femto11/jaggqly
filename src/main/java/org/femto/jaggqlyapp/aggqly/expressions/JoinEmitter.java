@@ -2,6 +2,8 @@ package org.femto.jaggqlyapp.aggqly.expressions;
 
 import java.util.List;
 
+import org.apache.commons.lang3.NotImplementedException;
+
 public class JoinEmitter implements NodeVisitor<JoinFunction> {
     public JoinFunction emit(List<TopLevelAstNode> nodes) {
         var innerGetters = nodes
@@ -19,6 +21,7 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
     }
 
     @Override
+    @SuppressWarnings("unused")
     public JoinFunction visit(FragmentNode node) {
         return (l, r, args, ctx) -> node.text().toString();
     }
@@ -44,26 +47,36 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
     }
 
     @Override
+    public JoinFunction visit(TTableCollectionNode node) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    @SuppressWarnings("unused")
     public JoinFunction visit(LTableCollectionNode node) {
         return (l, r, args, ctx) -> l + "." + node.member();
     }
 
     @Override
+    @SuppressWarnings("unused")
     public JoinFunction visit(MTableCollectionNode node) {
         return (l, r, args, ctx) -> "";
     }
 
     @Override
+    @SuppressWarnings("unused")
     public JoinFunction visit(RTableCollectionNode node) {
         return (l, r, args, ctx) -> r + "." + node.member();
     }
 
     @Override
+    @SuppressWarnings("unused")
     public JoinFunction visit(ArgCollectionNode node) {
         return (l, r, args, ctx) -> args.get(node.member());
     }
 
     @Override
+    @SuppressWarnings("unused")
     public JoinFunction visit(CtxCollectionNode node) {
         return (l, r, args, ctx) -> ctx.get(node.member());
     }

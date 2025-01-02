@@ -5,6 +5,8 @@ interface NodeVisitor<T> {
 
     T visit(ConditionalNode node);
 
+    T visit(TTableCollectionNode node);
+
     T visit(LTableCollectionNode node);
 
     T visit(MTableCollectionNode node);
