@@ -3,6 +3,10 @@ package org.femto.jaggqlyapp;
 import java.util.Map;
 
 import org.femto.jaggqlyapp.aggqly.AggqlyDataLoaders;
+import org.femto.jaggqlyapp.aggqly.expressions.Emitter;
+import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
+import org.femto.jaggqlyapp.aggqly.expressions.Parser;
+import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
 import org.femto.jaggqlyapp.aggqly.impl.JoinExpressionImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 import com.netflix.graphql.dgs.DgsQueryExecutor;
+
+import graphql.org.antlr.v4.runtime.CharStream;
+import graphql.org.antlr.v4.runtime.CharStreams;
+import graphql.org.antlr.v4.runtime.CommonTokenStream;
 
 @SpringBootTest
 class JaggqlyappApplicationTests {
@@ -36,6 +44,18 @@ class JaggqlyappApplicationTests {
 	}
 
 	@Test
+	void expressionParser() {
+		String input = "{!l(id)} = {!arg(id)} {?ctx(context) AND {!l(something)} = {!ctx(context)}}";
+		var lexer = new Lexer();
+		var tokens = lexer.tokenize(input);
+		var nodes = new Parser().parse(new TokenStream(tokens));
+		var expression = new Emitter().emit(nodes);
+
+		var x = expression.get("ltab", "rtab", Map.of("id", "1"), Map.of());
+		System.out.println(x);
+	}
+
+	@Test
 	void gqlQueryTest() {
 		var r = dgsQueryExecutor.execute("""
 					query shows($minRating: Int) {
@@ -54,22 +74,11 @@ class JaggqlyappApplicationTests {
 					}
 				""", Map.of("minRating", 3));
 
-		var sql = """
-				|	SELECT shows_0.title, reviews
-				|	FROM shows_0
-				|	|	OUTER APPLY (
-				|	|	|	SELECT reviews_1.text
-				|	|	|	FROM reviews_1
-				|	|	|	WHERE shows_0.review_id = reviews_1.id
-				|	|	|	  AND (reviews_1.stars >= :minStars_1 OR ... AND ...) <- join expression reviews(minStars)
-				|	|	|	ORDER BY x, y, z
-				|	|	) FOR JSON PATH reviews
-				|	WHERE shows_0.title = :title_0 <- where statement shows(title)
-					""";
-
 		System.out.println(r);
 	}
 
+	// {?arg:<arg> AND {arg:<arg>}}
+	// {?ctx:<ctx> AND {ctx:<ctx>} {?arg:<arg> OR {arg:<arg>} }}
 	// SelectNode (Table, (ColumnNode|JoinNode|JunctionNode)[], WhereNode,
 	// OrderNode[])
 	// JoinNode (Alias, SelectNode)

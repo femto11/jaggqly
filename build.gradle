@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.4.1'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.netflix.dgs.codegen' version '6.2.1'
+	id 'antlr'
 }
 
 group = 'org.femto'
@@ -27,6 +28,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'com.netflix.graphql.dgs:graphql-dgs-spring-graphql-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	antlr 'org.antlr:antlr4:4.13.1'
 }
 
 dependencyManagement {
@@ -44,3 +46,5 @@ generateJava {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+
