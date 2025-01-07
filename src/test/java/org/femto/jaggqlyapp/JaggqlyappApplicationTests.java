@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.TestExecutionListeners;
 
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 
@@ -49,6 +50,19 @@ class JaggqlyappApplicationTests {
 
 		var x = expression.get("ltab", "rtab", Map.of("id", "1"), Map.of());
 		System.out.println(x);
+	}
+
+	@Test
+	void testTableExpression() {
+		var r = dgsQueryExecutor.execute("""
+					query {
+						categories {
+							name
+						}
+					}
+				""");
+
+		System.out.println(r);
 	}
 
 	@Test

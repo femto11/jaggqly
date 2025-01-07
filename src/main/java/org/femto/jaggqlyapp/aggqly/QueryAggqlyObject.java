@@ -27,8 +27,20 @@ interface Show {
     List<Review> reviews();
 }
 
+@AggqlyType(name = "Category", table = "category", expression = "SELECT DISTINCT category FROM show")
+interface Category {
+    @AggqlyColumn(column = "category")
+    String name();
+
+    @AggqlyJoin(expression = "{!l(category)} = {!r(category)}")
+    List<Show> shows();
+}
+
 @AggqlyType(name = "Query", table = "")
 interface Query {
+    @AggqlyRoot()
+    public List<Object> categories();
+
     @AggqlyRoot()
     public List<Show> shows();
 

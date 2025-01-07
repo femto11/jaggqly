@@ -5,9 +5,16 @@ directive @orderBy(dir: OrderDirection) on FIELD
 directive @orderByInput on INPUT_OBJECT
 
 type Query {
+    categories: [Category]
+    
     shows(orderBy: ShowOrderBy): [Show]
 
     show(title: String!): Show
+}
+
+type Category {
+    name: String!
+    shows: [Show]
 }
 
 type Show {

@@ -22,6 +22,12 @@ public class ShowsDataFetcher {
       new Show("Orange is the New Black", 2013, List.of()));
 
   @DgsQuery
+  public List<Object> categories(DataFetchingEnvironment dfe) {
+    System.out.println(this.aggqly.execute(dfe));
+    return List.of();
+  }
+
+  @DgsQuery
   public List<Show> shows(DataFetchingEnvironment dfe) {
     System.out.println(this.aggqly.execute(dfe));
     return shows;

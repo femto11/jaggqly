@@ -77,7 +77,7 @@ public class Aggqly {
         var wherePart = node.where.isPresent() ? "WHERE " + node.where.get() + " " : "";
 
         final var selectStatment = MessageFormat.format(
-                "SELECT {0} FROM {1} {2} {3} {4} {5} OFFSET () FETCH ()", nodes.column, node.table, node.alias,
+                "SELECT {0} FROM {1} {2} {3} {4} {5}", nodes.column, node.table, node.alias,
                 nodes.join, wherePart, generateOrderBy(List.of()));
 
         return new Generated(selectStatment, null, null);
@@ -97,7 +97,7 @@ public class Aggqly {
         return new Generated(
                 null,
                 "(SELECT * FROM (" + generated.statement + ") " + sqlId(node.alias)
-                        + "WHERE () " + generateOrderBy(node.orderBy) + " OFFSET () FETCH () FOR JSON PATH) "
+                        + " " + generateOrderBy(node.orderBy) + " FOR JSON PATH) "
                         + sqlId(node.alias),
                 null);
     }
@@ -112,7 +112,7 @@ public class Aggqly {
     }
 
     private String generateOrderBy(List<Entry<String, String>> orderByList) {
-        return orderByList.isEmpty()
+        return !orderByList.isEmpty()
                 ? "ORDER BY " + orderByList
                         .stream()
                         .map(e -> sqlId(e.getKey()) + ' ' + e.getValue())
@@ -174,7 +174,7 @@ public class Aggqly {
             return Pair.of(selectNode, Collections.unmodifiableMap(this.registeredParameters));
         }
 
-        private ExecutableNormalizedField doHack(SelectedField sf) {
+        private static ExecutableNormalizedField doHack(SelectedField sf) {
             try {
                 var hacked = sf.getClass().getDeclaredField("executableNormalizedField");
                 hacked.setAccessible(true);
@@ -193,7 +193,7 @@ public class Aggqly {
             final var aggqlyType = loaders.getType(gqlType.getName());
 
             final var tableName = aggqlyType.getTable();
-            final var tableAlias = Parser.levelledAlias("", level);
+            final var tableAlias = Parser.levelledAlias(tableName, level);
             final var tableExpression = aggqlyType.getExpression().isPresent()
                     ? aggqlyType.getExpression().get().get(null, null, Map.of())
                     : tableName;
@@ -213,7 +213,7 @@ public class Aggqly {
                                         gqlField.getArguments(),
                                         gqlField.getType(),
                                         gqlField.getSelectionSet(),
-                                        parseOrderByArgument(doHack(gqlField).getAstArguments(),
+                                        parseOrderByArgument(Parser.doHack(gqlField).getAstArguments(),
                                                 gqlField.getFieldDefinitions().getFirst().getArguments()));
                             }
                             case ComputedField computedField -> {
