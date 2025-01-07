@@ -55,9 +55,10 @@ class JaggqlyappApplicationTests {
 	void gqlQueryTest() {
 		var r = dgsQueryExecutor.execute("""
 					query shows($minRating: Int) {
-						shows {
-							title,
-							reviews(minRating: $minRating) {
+						shows(orderBy: { title: ASC, releaseYear: DESC }) {
+							title
+							releaseYear
+							reviews(minRating: $minRating, orderBy: { rating: DESC }) {
 								... on ShortReview {
 									rating
 								}

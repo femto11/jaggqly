@@ -5,14 +5,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(ElementType.TYPE)
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AggqlyType {
-    public String name();
+public @interface AggqlyOrderBy {
+    public String column();
 
-    public String table();
-
-    public String expression() default "";
-
-    public String[] selectAlways() default {};
+    public String direction();
 }

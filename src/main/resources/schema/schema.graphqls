@@ -1,5 +1,11 @@
+directive @connection on OBJECT | INTERFACE
+
+directive @orderBy(dir: OrderDirection) on FIELD
+
+directive @orderByInput on INPUT_OBJECT
+
 type Query {
-    shows: [Show]
+    shows(orderBy: ShowOrderBy): [Show]
 
     show(title: String!): Show
 }
@@ -7,7 +13,7 @@ type Query {
 type Show {
     title: String
     releaseYear: Int
-    reviews(minRating: Int): [Review]
+    reviews(minRating: Int, orderBy: ReviewOrderBy): [Review]
 }
 
 interface Review {
@@ -22,3 +28,20 @@ type FullReview implements Review {
     rating: Int
     comment: String
 }
+
+enum OrderDirection {
+    ASC
+    DESC
+}
+
+
+input ShowOrderBy @orderByInput {
+    releaseYear: OrderDirection
+    title: OrderDirection
+}   
+
+input ReviewOrderBy @orderByInput {
+    rating: OrderDirection
+}   
+
+

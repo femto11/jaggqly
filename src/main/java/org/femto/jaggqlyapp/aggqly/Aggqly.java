@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -13,13 +14,21 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import graphql.com.google.common.collect.ImmutableList;
+import graphql.language.Argument;
+import graphql.language.EnumValue;
+import graphql.language.ObjectValue;
+import graphql.normalized.ExecutableNormalizedField;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.DataFetchingFieldSelectionSet;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
+import graphql.schema.SelectedField;
 
 @Component
 public class Aggqly {
@@ -68,7 +77,8 @@ public class Aggqly {
         var wherePart = node.where.isPresent() ? "WHERE " + node.where.get() + " " : "";
 
         final var selectStatment = MessageFormat.format(
-                "SELECT {0} FROM {1} {2} {3} {4}", nodes.column, node.table, node.alias, nodes.join, wherePart);
+                "SELECT {0} FROM {1} {2} {3} {4} {5} OFFSET () FETCH ()", nodes.column, node.table, node.alias,
+                nodes.join, wherePart, generateOrderBy(List.of()));
 
         return new Generated(selectStatment, null, null);
     }
@@ -86,7 +96,8 @@ public class Aggqly {
 
         return new Generated(
                 null,
-                "(SELECT * FROM (" + generated.statement + ") " + sqlId(node.alias) + " FOR JSON PATH) "
+                "(SELECT * FROM (" + generated.statement + ") " + sqlId(node.alias)
+                        + "WHERE () " + generateOrderBy(node.orderBy) + " OFFSET () FETCH () FOR JSON PATH) "
                         + sqlId(node.alias),
                 null);
     }
@@ -98,6 +109,15 @@ public class Aggqly {
                 .toList();
 
         return new Generated(String.join(" UNION ", selectStatements) + " " + node.alias + " ", "", "");
+    }
+
+    private String generateOrderBy(List<Entry<String, String>> orderByList) {
+        return orderByList.isEmpty()
+                ? "ORDER BY " + orderByList
+                        .stream()
+                        .map(e -> sqlId(e.getKey()) + ' ' + e.getValue())
+                        .collect(Collectors.joining(", "))
+                : "";
     }
 
     private record Generated(String statement, String column, String join) {
@@ -115,7 +135,6 @@ public class Aggqly {
     }
 
     private class Parser {
-
         private final DataFetchingEnvironment dfe;
 
         private final Map<String, Object> registeredParameters;
@@ -138,6 +157,7 @@ public class Aggqly {
             }
 
             final var gqlField = this.dfe.getField();
+            final var gqlFieldDef = this.dfe.getFieldDefinition();
 
             final var aggqlyParentType = loaders.getType(((GraphQLObjectType) dfe.getParentType()).getName());
             final var aggqlyField = aggqlyParentType.getRoot(gqlField.getName());
@@ -145,23 +165,38 @@ public class Aggqly {
                 return null;
             }
 
-            var args = this.dfe.getArguments();
+            var orderBy = parseOrderByArgument(ImmutableList.copyOf(gqlField.getArguments()),
+                    gqlFieldDef.getArguments());
 
-            var selectionSet = this.dfe.getSelectionSet();
-
-            var selectNode = parseSelect(0, returnType, args, selectionSet,
-                    aggqlyField.getWhere());
+            var selectNode = parseSelect(0, returnType, this.dfe.getArguments(), this.dfe.getSelectionSet(),
+                    aggqlyField.getWhere(), orderBy);
 
             return Pair.of(selectNode, Collections.unmodifiableMap(this.registeredParameters));
         }
 
+        private ExecutableNormalizedField doHack(SelectedField sf) {
+            try {
+                var hacked = sf.getClass().getDeclaredField("executableNormalizedField");
+                hacked.setAccessible(true);
+                return (ExecutableNormalizedField) hacked.get(sf);
+            } catch (NoSuchFieldException e) {
+            } catch (IllegalAccessException e) {
+            }
+
+            return null;
+        }
+
         private SelectNode parseSelect(Integer level, GraphQLObjectType gqlType, Map<String, Object> args,
-                DataFetchingFieldSelectionSet selectionSet, WhereExpression whereExpression) {
+                DataFetchingFieldSelectionSet selectionSet, WhereExpression whereExpression,
+                List<Entry<String, String>> orderBy) {
 
             final var aggqlyType = loaders.getType(gqlType.getName());
 
             final var tableName = aggqlyType.getTable();
-            final var tableAlias = Parser.levelledAlias(tableName, level);
+            final var tableAlias = Parser.levelledAlias("", level);
+            final var tableExpression = aggqlyType.getExpression().isPresent()
+                    ? aggqlyType.getExpression().get().get(null, null, Map.of())
+                    : tableName;
 
             final var selectionNodes = selectionSet.getImmediateFields()
                     .stream()
@@ -177,7 +212,9 @@ public class Aggqly {
                                 return this.parseJoin(level, tableAlias, joinField,
                                         gqlField.getArguments(),
                                         gqlField.getType(),
-                                        gqlField.getSelectionSet());
+                                        gqlField.getSelectionSet(),
+                                        parseOrderByArgument(doHack(gqlField).getAstArguments(),
+                                                gqlField.getFieldDefinitions().getFirst().getArguments()));
                             }
                             case ComputedField computedField -> {
                                 return parseComputed(level, tableAlias, computedField);
@@ -204,13 +241,14 @@ public class Aggqly {
                     ? Optional.of(whereExpression.method(tableAlias, argAliases, Map.of()))
                     : Optional.<String>empty();
 
-            return new SelectNode(tableName, tableAlias, selectionNodes, whereStatement);
+            return new SelectNode(tableExpression, tableAlias, selectionNodes, whereStatement, orderBy);
         }
 
         private AstNode parseJoin(Integer level, String leftTableAlias, JoinField aggqlyField,
                 Map<String, Object> args,
                 GraphQLOutputType rightRawGqlType,
-                DataFetchingFieldSelectionSet selectionSet) {
+                DataFetchingFieldSelectionSet selectionSet,
+                List<Entry<String, String>> orderBy) {
 
             final var unwrappedGqlType = Parser.MaybeUnwrapGraphQLListType(rightRawGqlType);
 
@@ -221,11 +259,12 @@ public class Aggqly {
                 case GraphQLInterfaceType interfaceType ->
                     this.parseInterface(level, interfaceType, args, selectionSet, preparedJoinExpression);
                 case GraphQLObjectType objectType ->
-                    this.parseSelect(level + 1, objectType, args, selectionSet, preparedJoinExpression);
+                    this.parseSelect(level + 1, objectType, args, selectionSet, preparedJoinExpression,
+                            List.of());
                 default -> new DeathNode("");
             };
 
-            return new JoinNode(aggqlyField.getName(), selectNode);
+            return new JoinNode(aggqlyField.getName(), selectNode, orderBy);
         }
 
         private AstNode parseInterface(Integer level, GraphQLInterfaceType gqlIfType,
@@ -239,13 +278,13 @@ public class Aggqly {
 
             if (selectedGqlTypes.size() == 1) {
                 return parseSelect(level, selectedGqlTypes.stream().findFirst().get(), args,
-                        selectionSet, whereExpression);
+                        selectionSet, whereExpression, List.of());
             }
 
             final var selectNodes = selectedGqlTypes
                     .stream()
                     .map(gqlType -> {
-                        return parseSelect(level, gqlType, args, selectionSet, whereExpression);
+                        return parseSelect(level, gqlType, args, selectionSet, whereExpression, List.of());
                     })
                     .toList();
 
@@ -288,11 +327,11 @@ public class Aggqly {
         };
 
         public record SelectNode(@NotNull String table, @NotNull String alias, @NotNull List<AstNode> selections,
-                Optional<String> where)
+                Optional<String> where, List<Entry<String, String>> orderBy)
                 implements AstNode {
         };
 
-        public record JoinNode(@NotNull String alias, @NotNull AstNode selectNode)
+        public record JoinNode(@NotNull String alias, @NotNull AstNode selectNode, List<Entry<String, String>> orderBy)
                 implements AstNode {
         };
 
@@ -317,5 +356,35 @@ public class Aggqly {
 
             void visitNullNode(NullNode node);
         }
+    }
+
+    List<Entry<String, String>> parseOrderByArgument(ImmutableList<Argument> args,
+            List<GraphQLArgument> argDefinitions) {
+        var orderByArgsDefinition = argDefinitions
+                .stream()
+                // .map(ad -> {
+                // var t = ad.getType();
+                // if (t instanceof GraphQLInputObjectType iot) {
+                // iot.getDirective("orderByInput");
+                // return ad;
+                // }
+                // return null;
+                // })
+                .filter(ad -> {
+                    return ad.getType() instanceof GraphQLInputObjectType iot
+                            ? iot.getDirective("orderByInput") != null
+                            : false;
+                }).findFirst();
+
+        var orderBy = orderByArgsDefinition.isPresent()
+                ? args
+                        .stream()
+                        .filter(e -> e.getName().equals(orderByArgsDefinition.get().getName()))
+                        .flatMap(e -> ((ObjectValue) e.getValue()).getObjectFields().stream())
+                        .map(e -> Map.entry(e.getName(), ((EnumValue) e.getValue()).getName()))
+                        .toList()
+                : List.<Entry<String, String>>of();
+
+        return orderBy;
     }
 }

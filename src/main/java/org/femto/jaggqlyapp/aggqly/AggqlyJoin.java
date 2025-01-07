@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AggqlyJoin {
     public String expression();
+
+    public String orderByArg() default "orderBy";
 }

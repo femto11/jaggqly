@@ -68,14 +68,11 @@ final class AggqlyInterfaceScanRegistrar
                     final var aggqlyType = loadAggqlyTypeInterface(beanDefinition.getBeanClassName());
 
                     final var typeConfig = aggqlyType.getAnnotation(AggqlyType.class);
+                    if (typeConfig == null) {
+                        continue;
+                    }
 
-                    final var name = typeConfig.name().isEmpty()
-                            ? aggqlyType.getName()
-                            : typeConfig.name();
-
-                    final var builder = new AggqlyObject.Builder(name)
-                            .table(typeConfig.table())
-                            .selectAlways(typeConfig.selectAlways());
+                    final var builder = AggqlyObject.Builder.fromAnnotation(typeConfig);
 
                     for (var method : aggqlyType.getDeclaredMethods()) {
                         final var root = method.getAnnotation(AggqlyRoot.class);
