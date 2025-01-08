@@ -6,7 +6,7 @@ import java.util.Map;
 public interface WhereFunction {
     String get(String t, Map<String, String> args, Map<String, String> ctx);
 
-    static WhereFunction fromExpression(String s) {
+    static WhereFunction fromExpression(String s) throws ParserException {
         final var tokens = new Lexer().tokenize(s);
         final var nodes = new Parser().parse(new TokenStream(tokens));
         return new WhereEmitter().emit(nodes);

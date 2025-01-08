@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
 
 public final class AggqlyObject {
@@ -91,7 +92,7 @@ public final class AggqlyObject {
             return this;
         }
 
-        public AggqlyObject build() {
+        public AggqlyObject build() throws ParserException {
             if (this.expression.isEmpty()) {
                 return new AggqlyObject(typeName, this.tableName, Optional.empty(), fields, roots, selectAlwaysNames);
             }

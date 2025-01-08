@@ -6,6 +6,7 @@ import org.femto.jaggqlyapp.aggqly.AggqlyDataLoaders;
 import org.femto.jaggqlyapp.aggqly.expressions.JoinEmitter;
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
 import org.femto.jaggqlyapp.aggqly.expressions.Parser;
+import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
 import org.femto.jaggqlyapp.aggqly.impl.JoinExpressionImpl;
 import org.junit.jupiter.api.Test;

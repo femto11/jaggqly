@@ -1,6 +1,7 @@
 package org.femto.jaggqlyapp.aggqly;
 
 import org.femto.jaggqlyapp.aggqly.expressions.JoinFunction;
+import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.jetbrains.annotations.NotNull;
 
 public final class JunctionField implements AggqlyField {
@@ -16,7 +17,7 @@ public final class JunctionField implements AggqlyField {
 
     public static JunctionField fromAnnotation(
             @NotNull String name,
-            @NotNull AggqlyJunction annotation) {
+            @NotNull AggqlyJunction annotation) throws ParserException {
         final var expression = JoinFunction.fromExpression(annotation.expression());
         return new JunctionField(name, expression);
     }

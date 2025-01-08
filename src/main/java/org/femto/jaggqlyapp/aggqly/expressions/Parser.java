@@ -3,6 +3,8 @@ package org.femto.jaggqlyapp.aggqly.expressions;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.femto.jaggqlyapp.aggqly.expressions.Lexer.Token;
+
 // {?arg:jjjkgj AND COALESCE({arg:jjkgj}, 0) = 1}
 
 // start := TEXT directive TEXT* EOS
@@ -96,7 +98,7 @@ record FragmentNode(CharSequence text) implements TopLevelAstNode {
 public class Parser {
     private TokenStream stream;
 
-    public List<TopLevelAstNode> parse(TokenStream tokens) {
+    public List<TopLevelAstNode> parse(TokenStream tokens) throws ParserException {
         this.stream = tokens;
 
         final var nodes = parseExpression();
@@ -105,7 +107,7 @@ public class Parser {
     }
 
     // (text | directive)*
-    private List<TopLevelAstNode> parseExpression() {
+    private List<TopLevelAstNode> parseExpression() throws ParserException {
         var nodes = new ArrayList<TopLevelAstNode>();
 
         while (true) {
@@ -128,21 +130,23 @@ public class Parser {
     // directive
     // : OPENCURLY (conditional | accessor) CLOSECURLY
     // ;
-    private DirectiveNode parseDirective() {
-        if (this.stream.eat().kind() != TokenKind.OPENCURLY) {
-            // Error based on token
-            return null;
+    private DirectiveNode parseDirective() throws ParserException {
+        TokenKind token = this.stream.eat().kind();
+        if (token != TokenKind.OPENCURLY) {
+            throw new ParserException("Expected OPENCURLY but got " + token);
         }
 
-        final var node = switch (this.stream.peek().kind()) {
+        token = this.stream.peek().kind();
+        final var node = switch (token) {
             case TokenKind.QUESTIONMARK -> this.parseConditional();
             case TokenKind.EXCLAMATIONMARK -> this.parseAccessor();
-            default -> null;
+            default ->
+                throw new ParserException("Expected QUESTIONMARK | EXCLAMATIONMARK but got " + token);
         };
 
-        if (this.stream.eat().kind() != TokenKind.CLOSECURLY) {
-            // Error based on token
-            return null;
+        token = this.stream.eat().kind();
+        if (token != TokenKind.CLOSECURLY) {
+            throw new ParserException("Expected CLOSECURLY but got " + token);
         }
 
         return node;
@@ -151,10 +155,10 @@ public class Parser {
     // conditional
     // : QUESTIONMARK memberaccess expression+
     // ;
-    private ConditionalNode parseConditional() {
-        if (this.stream.eat().kind() != TokenKind.QUESTIONMARK) {
-            // Error based on token
-            return null;
+    private ConditionalNode parseConditional() throws ParserException {
+        TokenKind token = this.stream.eat().kind();
+        if (token != TokenKind.QUESTIONMARK) {
+            throw new ParserException("Expected QUESTIONMARK but got " + token);
         }
 
         final var memberAccessNode = this.parseCollection();
@@ -166,37 +170,40 @@ public class Parser {
     // accessor
     // : EXCLAMATIONMARK memberaccess
     // ;
-    private CollectionNode parseAccessor() {
-        if (this.stream.eat().kind() != TokenKind.EXCLAMATIONMARK) {
-            // Error based on token
-            return null;
+    private CollectionNode parseAccessor() throws ParserException {
+        TokenKind token = this.stream.eat().kind();
+        if (token != TokenKind.EXCLAMATIONMARK) {
+            throw new ParserException("Expected EXCLAMATIONMARK but got " + token);
         }
 
         return parseCollection();
     }
 
-    private CollectionNode parseCollection() {
-        if (this.stream.peek().clazz() != TokenClass.COLLECTION) {
-            // Error based on token
-            return null;
+    private CollectionNode parseCollection() throws ParserException {
+        Token token = this.stream.peek();
+        if (token.clazz() != TokenClass.COLLECTION) {
+            throw new ParserException("Expected COLLECTION but got " + token.kind());
         }
 
         final var collection = this.stream.eat().kind();
 
-        if (this.stream.peek().kind() != TokenKind.OPENPAREN) {
-            return null;
+        token = this.stream.peek();
+        if (token.kind() != TokenKind.OPENPAREN) {
+            throw new ParserException("Expected OPENPAREN but got " + token);
         }
 
         this.stream.eat();
 
-        if (this.stream.peek().kind() != TokenKind.IDENTIFIER) {
-            return null;
+        token = this.stream.peek();
+        if (token.kind() != TokenKind.IDENTIFIER) {
+            throw new ParserException("Expected IDENTIFIER but got " + token);
         }
 
         final var member = this.stream.eat().text().toString();
 
-        if (this.stream.peek().kind() != TokenKind.CLOSEPAREN) {
-            return null;
+        token = this.stream.peek();
+        if (token.kind() != TokenKind.CLOSEPAREN) {
+            throw new ParserException("Expected CLOSEPAREN but got " + token);
         }
 
         this.stream.eat();
@@ -210,29 +217,5 @@ public class Parser {
             case TokenKind.CTX -> new CtxCollectionNode(member);
             default -> null;
         };
-    }
-
-    // identifier
-    // : OPENPAREN IDENTIFIER CLOSEPAREN
-    private IdentifierNode parseIdentifier() {
-        if (this.stream.peek().kind() != TokenKind.OPENPAREN) {
-            return null;
-        }
-
-        this.stream.eat();
-
-        if (this.stream.peek().kind() != TokenKind.IDENTIFIER) {
-            return null;
-        }
-
-        final var identifierNode = new IdentifierNode(this.stream.eat().text());
-
-        if (this.stream.peek().kind() != TokenKind.CLOSEPAREN) {
-            return null;
-        }
-
-        this.stream.eat();
-
-        return identifierNode;
     }
 }
