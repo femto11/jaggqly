@@ -25,6 +25,14 @@ interface Show {
 
     @AggqlyJoin(expression = "{!l(show_id)} = {!r(show_id)}")
     List<Review> reviews();
+
+    @AggqlyJunction(expression = "EXISTS (SELECT null FROM show_actor sa WHERE {!l(show_id)} = sa.show_id AND {!r(actor_id)} = sa.actor_id)")
+    List<Actor> actors();
+}
+
+@AggqlyType(name = "Actor", table = "actor")
+interface Actor {
+    String name();
 }
 
 @AggqlyType(name = "Category", table = "category", expression = "SELECT DISTINCT category FROM show")

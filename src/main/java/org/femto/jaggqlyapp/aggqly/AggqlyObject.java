@@ -92,7 +92,7 @@ public final class AggqlyObject {
         }
 
         public AggqlyObject build() {
-            if (this.tableName.isEmpty()) {
+            if (this.expression.isEmpty()) {
                 return new AggqlyObject(typeName, this.tableName, Optional.empty(), fields, roots, selectAlwaysNames);
             }
 

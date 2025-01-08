@@ -97,7 +97,7 @@ final class AggqlyInterfaceScanRegistrar
 
                                 final var junction = method.getAnnotation(AggqlyJunction.class);
                                 if (junction != null) {
-                                    System.out.println(returnType);
+                                    return JunctionField.fromAnnotation(method.getName(), junction);
                                 }
 
                                 final var computed = method.getAnnotation(AggqlyComputed.class);

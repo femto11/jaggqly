@@ -19,8 +19,13 @@ type Category {
 
 type Show {
     title: String
+    actors: [Actor]
     releaseYear: Int
     reviews(minRating: Int, orderBy: ReviewOrderBy): [Review]
+}
+
+type Actor {
+    name: String
 }
 
 interface Review {

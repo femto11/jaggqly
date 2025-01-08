@@ -8,9 +8,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AggqlyJunction {
-    public String middleTable();
-
-    public String leftExpression();
-
-    public String rightExpression();
+    public String expression();
 }

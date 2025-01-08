@@ -216,6 +216,14 @@ public class Aggqly {
                                         parseOrderByArgument(Parser.doHack(gqlField).getAstArguments(),
                                                 gqlField.getFieldDefinitions().getFirst().getArguments()));
                             }
+                            case JunctionField junctionField -> {
+                                return this.parseJunction(level, tableAlias, junctionField,
+                                        gqlField.getArguments(),
+                                        gqlField.getType(),
+                                        gqlField.getSelectionSet(),
+                                        parseOrderByArgument(Parser.doHack(gqlField).getAstArguments(),
+                                                gqlField.getFieldDefinitions().getFirst().getArguments()));
+                            }
                             case ComputedField computedField -> {
                                 return parseComputed(level, tableAlias, computedField);
                             }
@@ -266,6 +274,31 @@ public class Aggqly {
 
             return new JoinNode(aggqlyField.getName(), selectNode, orderBy);
         }
+
+        private AstNode parseJunction(Integer level, String leftTableAlias, JunctionField aggqlyField,
+                Map<String, Object> args,
+                GraphQLOutputType rightRawGqlType,
+                DataFetchingFieldSelectionSet selectionSet,
+                List<Entry<String, String>> orderBy) {
+            final var unwrappedGqlType = Parser.MaybeUnwrapGraphQLListType(rightRawGqlType);
+
+            final WhereExpression preparedJoinExpression = (a, b, c) -> aggqlyField.getExpression()
+                    .get(leftTableAlias, a, b, c);
+            // final WhereExpression preparedRightJoinExpression = (a, b, c) ->
+            // aggqlyField.getRightExpression()
+            // .get(rightTableAlias, a, b, c);
+
+            final AstNode selectNode = switch (unwrappedGqlType) {
+                case GraphQLInterfaceType interfaceType ->
+                    this.parseInterface(level, interfaceType, args, selectionSet, preparedJoinExpression);
+                case GraphQLObjectType objectType ->
+                    this.parseSelect(level + 1, objectType, args, selectionSet, preparedJoinExpression,
+                            List.of());
+                default -> new DeathNode("");
+            };
+
+            return new JoinNode(aggqlyField.getName(), selectNode, orderBy);
+        };
 
         private AstNode parseInterface(Integer level, GraphQLInterfaceType gqlIfType,
                 Map<String, Object> args, DataFetchingFieldSelectionSet selectionSet, WhereExpression whereExpression) {

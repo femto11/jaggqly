@@ -53,6 +53,21 @@ class JaggqlyappApplicationTests {
 	}
 
 	@Test
+	void testJunction() {
+		var r = dgsQueryExecutor.execute("""
+					query {
+						shows {
+							actors {
+								name
+							}
+						}
+					}
+				""");
+
+		System.out.println(r);
+	}
+
+	@Test
 	void testTableExpression() {
 		var r = dgsQueryExecutor.execute("""
 					query {
