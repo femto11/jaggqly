@@ -1,6 +1,7 @@
 package org.femto.jaggqlyapp.aggqly.expressions;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -12,11 +13,10 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
                 .toList();
 
         return (l, r, args, ctx) -> {
-            var sb = new StringBuilder();
-            for (var g : innerGetters) {
-                sb.append(g.get(l, r, args, ctx));
-            }
-            return sb.toString();
+            return innerGetters
+                    .stream()
+                    .map(g -> g.get(l, r, args, ctx))
+                    .collect(Collectors.joining());
         };
     }
 
@@ -36,11 +36,10 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
                 .toList();
 
         JoinFunction inner = (l, r, args, ctx) -> {
-            var sb = new StringBuilder();
-            for (var g : innerGetters) {
-                sb.append(g.get(l, r, args, ctx));
-            }
-            return sb.toString();
+            return innerGetters
+                    .stream()
+                    .map(g -> g.get(l, r, args, ctx))
+                    .collect(Collectors.joining());
         };
 
         return (l, r, args, ctx) -> accessor.get(l, r, args, ctx) != null ? inner.get(l, r, args, ctx) : "";
@@ -58,9 +57,8 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
     }
 
     @Override
-    @SuppressWarnings("unused")
     public JoinFunction visit(MTableCollectionNode node) {
-        return (l, r, args, ctx) -> "";
+        throw new NotImplementedException();
     }
 
     @Override

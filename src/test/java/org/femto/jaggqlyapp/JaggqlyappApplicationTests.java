@@ -6,15 +6,12 @@ import org.femto.jaggqlyapp.aggqly.AggqlyDataLoaders;
 import org.femto.jaggqlyapp.aggqly.expressions.JoinEmitter;
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
 import org.femto.jaggqlyapp.aggqly.expressions.Parser;
-import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
 import org.femto.jaggqlyapp.aggqly.impl.JoinExpressionImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.TestExecutionListeners;
-
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 
 @SpringBootTest
