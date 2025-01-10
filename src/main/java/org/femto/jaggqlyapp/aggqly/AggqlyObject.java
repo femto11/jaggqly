@@ -14,20 +14,27 @@ public final class AggqlyObject {
     public final Optional<String[]> selectAlwaysNames;
     public final Map<String, AggqlyField> fields;
     private final Map<String, RootField> roots;
+    private Optional<String> schemaName;
 
     private AggqlyObject(
             String typeName,
+            Optional<String> schemaName,
             String tableName,
             Optional<WhereFunction> expression,
             final Map<String, AggqlyField> fields,
             final Map<String, RootField> roots,
             Optional<String[]> selectAlwaysNames) {
         this.typeName = typeName;
+        this.schemaName = schemaName;
         this.tableName = tableName;
         this.expression = expression;
         this.selectAlwaysNames = selectAlwaysNames;
         this.fields = fields;
         this.roots = roots;
+    }
+
+    public Optional<String> getSchema() {
+        return this.schemaName;
     }
 
     public String getTable() {
@@ -56,6 +63,7 @@ public final class AggqlyObject {
 
         private String typeName;
         private String tableName;
+        private String schemaName;
         private Optional<String[]> selectAlwaysNames;
         private String expression;
         private final Map<String, AggqlyField> fields;
@@ -65,6 +73,11 @@ public final class AggqlyObject {
             this.typeName = typeName;
             this.fields = new HashMap<>();
             this.roots = new HashMap<>();
+        }
+
+        public Builder schema(final String schema) {
+            this.schemaName = schema;
+            return this;
         }
 
         public Builder table(final String name) {
@@ -94,12 +107,16 @@ public final class AggqlyObject {
 
         public AggqlyObject build() throws ParserException {
             if (this.expression.isEmpty()) {
-                return new AggqlyObject(typeName, this.tableName, Optional.empty(), fields, roots, selectAlwaysNames);
+                return new AggqlyObject(typeName,
+                        this.schemaName == null ? Optional.empty() : Optional.of(this.schemaName), this.tableName,
+                        Optional.empty(), fields, roots,
+                        selectAlwaysNames);
             }
 
             final var function = WhereFunction.fromExpression(this.expression);
             WhereFunction thunk = (a, b, c) -> "(" + function.get(a, b, c) + ")";
-            return new AggqlyObject(typeName, this.tableName, Optional.of(thunk), fields, roots, selectAlwaysNames);
+            return new AggqlyObject(typeName, Optional.empty(), this.tableName, Optional.of(thunk), fields, roots,
+                    selectAlwaysNames);
         }
     }
 }

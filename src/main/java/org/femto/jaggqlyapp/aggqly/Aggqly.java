@@ -10,6 +10,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.femto.jaggqlyapp.aggqly.execution.AstNode;
+import org.femto.jaggqlyapp.aggqly.execution.ColumnNode;
+import org.femto.jaggqlyapp.aggqly.execution.DeathNode;
+import org.femto.jaggqlyapp.aggqly.execution.InterfaceNode;
+import org.femto.jaggqlyapp.aggqly.execution.JoinNode;
+import org.femto.jaggqlyapp.aggqly.execution.NullNode;
+import org.femto.jaggqlyapp.aggqly.execution.SelectNode;
+import org.femto.jaggqlyapp.aggqly.execution.SqlGenerator;
+import org.femto.jaggqlyapp.aggqly.execution.TSqlGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,94 +53,11 @@ public class Aggqly {
     public Pair<String, Map<String, Object>> execute(DataFetchingEnvironment dfe) {
         var parseResult = new Parser(dfe).run();
 
-        System.out.println("--- Aggqly AST ----------------------");
-        final var node = parseResult.getLeft();
-        switch (node) {
-            case Parser.SelectNode selectNode: {
-                System.out.println("SelectNode {");
+        final var generator = new TSqlGenerator();
 
-                System.out.println("SelectNode }");
-            }
-        }
-        System.out.println("-------------------------------------");
-
-        final var sql = this.generate(parseResult.getLeft()).statement;
+        final var sql = parseResult.getLeft().accept(generator).statement();
 
         return Pair.of(sql, parseResult.getRight());
-    }
-
-    private Generated generate(Parser.AstNode ast) {
-        return switch (ast) {
-            case Parser.SelectNode selectNode -> generateSelect(selectNode);
-            case Parser.ColumnNode columnNode -> generateColumn(columnNode);
-            case Parser.JoinNode joinNode -> generateJoin(joinNode);
-            case Parser.InterfaceNode interfaceNode -> generateInterface(interfaceNode);
-            case Parser.NullNode nullNode -> generateNull(nullNode);
-            default -> new Generated(null, null, null);
-        };
-    }
-
-    private Generated generateSelect(Parser.SelectNode node) {
-        final var nodes = Generated.normalize(node.selections.stream().map(n -> this.generate(n)).toList());
-
-        var wherePart = node.where.isPresent() ? "WHERE " + node.where.get() + " " : "";
-
-        final var selectStatment = MessageFormat.format(
-                "SELECT {0} FROM {1} {2} {3} {4} {5}", nodes.column, node.table, node.alias,
-                nodes.join, wherePart, generateOrderBy(List.of()));
-
-        return new Generated(selectStatment, null, null);
-    }
-
-    private Generated generateColumn(Parser.ColumnNode node) {
-        return new Generated(null, node.expression + " " + sqlId(node.alias) + " ", null);
-    }
-
-    private Generated generateNull(Parser.NullNode node) {
-        return new Generated(null, "NULL " + sqlId(node.alias) + " ", null);
-    }
-
-    private Generated generateJoin(Parser.JoinNode node) {
-        final var generated = generate(node.selectNode);
-
-        return new Generated(
-                null,
-                "(SELECT * FROM (" + generated.statement + ") " + sqlId(node.alias)
-                        + " " + generateOrderBy(node.orderBy) + " FOR JSON PATH) "
-                        + sqlId(node.alias),
-                null);
-    }
-
-    private Generated generateInterface(Parser.InterfaceNode node) {
-        final var selectStatements = node.selectNodes
-                .stream()
-                .map(n -> generate(n).statement)
-                .toList();
-
-        return new Generated(String.join(" UNION ", selectStatements) + " " + node.alias + " ", "", "");
-    }
-
-    private String generateOrderBy(List<Entry<String, String>> orderByList) {
-        return !orderByList.isEmpty()
-                ? "ORDER BY " + orderByList
-                        .stream()
-                        .map(e -> sqlId(e.getKey()) + ' ' + e.getValue())
-                        .collect(Collectors.joining(", "))
-                : "";
-    }
-
-    private record Generated(String statement, String column, String join) {
-        public static Generated normalize(List<Generated> list) {
-            final var columns = list.stream().map(node -> node.column).collect(Collectors.joining(", "));
-            final var joins = list.stream().map(node -> node.join).filter(x -> x != null)
-                    .collect(Collectors.joining(" "));
-
-            return new Generated(null, columns, joins);
-        }
-    };
-
-    private static String sqlId(@NotNull String id) {
-        return "\"" + id + "\"";
     }
 
     private class Parser {
@@ -192,6 +118,7 @@ public class Aggqly {
 
             final var aggqlyType = loaders.getType(gqlType.getName());
 
+            final var schemaName = aggqlyType.getSchema();
             final var tableName = aggqlyType.getTable();
             final var tableAlias = Parser.levelledAlias(tableName, level);
             final var tableExpression = aggqlyType.getExpression().isPresent()
@@ -249,7 +176,7 @@ public class Aggqly {
                     ? Optional.of(whereExpression.method(tableAlias, argAliases, Map.of()))
                     : Optional.<String>empty();
 
-            return new SelectNode(tableExpression, tableAlias, selectionNodes, whereStatement, orderBy);
+            return new SelectNode(schemaName, tableExpression, tableAlias, selectionNodes, whereStatement, orderBy);
         }
 
         private AstNode parseJoin(Integer level, String leftTableAlias, JoinField aggqlyField,
@@ -284,9 +211,6 @@ public class Aggqly {
 
             final WhereExpression preparedJoinExpression = (a, b, c) -> aggqlyField.getExpression()
                     .get(leftTableAlias, a, b, c);
-            // final WhereExpression preparedRightJoinExpression = (a, b, c) ->
-            // aggqlyField.getRightExpression()
-            // .get(rightTableAlias, a, b, c);
 
             final AstNode selectNode = switch (unwrappedGqlType) {
                 case GraphQLInterfaceType interfaceType ->
@@ -353,71 +277,26 @@ public class Aggqly {
             return new StringBuilder(name).append('_').append(level).toString();
         }
 
-        public interface AstNode {
+        List<Entry<String, String>> parseOrderByArgument(ImmutableList<Argument> args,
+                List<GraphQLArgument> argDefinitions) {
+            var orderByArgsDefinition = argDefinitions
+                    .stream()
+                    .filter(ad -> {
+                        return ad.getType() instanceof GraphQLInputObjectType iot
+                                ? iot.getDirective("orderByInput") != null
+                                : false;
+                    }).findFirst();
+
+            var orderBy = orderByArgsDefinition.isPresent()
+                    ? args
+                            .stream()
+                            .filter(e -> e.getName().equals(orderByArgsDefinition.get().getName()))
+                            .flatMap(e -> ((ObjectValue) e.getValue()).getObjectFields().stream())
+                            .map(e -> Map.entry(e.getName(), ((EnumValue) e.getValue()).getName()))
+                            .toList()
+                    : List.<Entry<String, String>>of();
+
+            return orderBy;
         }
-
-        public record DeathNode(@NotNull String alias) implements AstNode {
-        };
-
-        public record SelectNode(@NotNull String table, @NotNull String alias, @NotNull List<AstNode> selections,
-                Optional<String> where, List<Entry<String, String>> orderBy)
-                implements AstNode {
-        };
-
-        public record JoinNode(@NotNull String alias, @NotNull AstNode selectNode, List<Entry<String, String>> orderBy)
-                implements AstNode {
-        };
-
-        public record InterfaceNode(@NotNull String alias, @NotNull List<SelectNode> selectNodes)
-                implements AstNode {
-        };
-
-        public record ColumnNode(@NotNull String alias, @NotNull String expression) implements AstNode {
-        };
-
-        public record NullNode(@NotNull String alias) implements AstNode {
-            void accept(NodeVisitor visitor) {
-            }
-        };
-
-        interface NodeVisitor {
-            void visitSelectNode(SelectNode node);
-
-            void visitColumnNode(ColumnNode node);
-
-            void visitJoinNode(JoinNode node);
-
-            void visitNullNode(NullNode node);
-        }
-    }
-
-    List<Entry<String, String>> parseOrderByArgument(ImmutableList<Argument> args,
-            List<GraphQLArgument> argDefinitions) {
-        var orderByArgsDefinition = argDefinitions
-                .stream()
-                // .map(ad -> {
-                // var t = ad.getType();
-                // if (t instanceof GraphQLInputObjectType iot) {
-                // iot.getDirective("orderByInput");
-                // return ad;
-                // }
-                // return null;
-                // })
-                .filter(ad -> {
-                    return ad.getType() instanceof GraphQLInputObjectType iot
-                            ? iot.getDirective("orderByInput") != null
-                            : false;
-                }).findFirst();
-
-        var orderBy = orderByArgsDefinition.isPresent()
-                ? args
-                        .stream()
-                        .filter(e -> e.getName().equals(orderByArgsDefinition.get().getName()))
-                        .flatMap(e -> ((ObjectValue) e.getValue()).getObjectFields().stream())
-                        .map(e -> Map.entry(e.getName(), ((EnumValue) e.getValue()).getName()))
-                        .toList()
-                : List.<Entry<String, String>>of();
-
-        return orderBy;
     }
 }

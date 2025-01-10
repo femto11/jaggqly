@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
 public @interface AggqlyType {
     public String name();
 
+    public String schema() default "";
+
     public String table();
 
     public String expression() default "";
