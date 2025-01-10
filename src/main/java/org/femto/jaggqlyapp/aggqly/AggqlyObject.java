@@ -56,6 +56,7 @@ public final class AggqlyObject {
     public static class Builder {
         static Builder fromAnnotation(AggqlyType annotation) {
             return new Builder(annotation.name())
+                    .schema(annotation.schema())
                     .table(annotation.table())
                     .expression(annotation.expression())
                     .selectAlways(annotation.selectAlways());
@@ -108,7 +109,7 @@ public final class AggqlyObject {
         public AggqlyObject build() throws ParserException {
             if (this.expression.isEmpty()) {
                 return new AggqlyObject(typeName,
-                        this.schemaName == null ? Optional.empty() : Optional.of(this.schemaName), this.tableName,
+                        this.schemaName.isEmpty() ? Optional.empty() : Optional.of(this.schemaName), this.tableName,
                         Optional.empty(), fields, roots,
                         selectAlwaysNames);
             }

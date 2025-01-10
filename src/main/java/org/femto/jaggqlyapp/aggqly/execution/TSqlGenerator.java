@@ -28,12 +28,10 @@ public class TSqlGenerator implements SqlGenerator {
     public Generated generate(JoinNode node) {
         final var generated = node.selectNode().accept(this);
 
-        return new Generated(
-                null,
-                "(SELECT * FROM (" + generated.statement() + ") " + sqlId(node.alias())
-                        + " " + generateOrderBy(node.orderBy()) + " FOR JSON PATH) "
-                        + sqlId(node.alias()),
-                null);
+        var sql = "OUTER APPLY (" + generated.statement() + " FOR JSON PATH) "
+                + node.alias() + "(" + sqlId(node.alias()) + ")";
+
+        return new Generated(null, sqlId(node.alias()), sql);
     }
 
     @Override
@@ -72,6 +70,6 @@ public class TSqlGenerator implements SqlGenerator {
     }
 
     private static String sqlId(@NotNull String id) {
-        return "\"" + id + "\"";
+        return "[" + id + "]";
     }
 }

@@ -3,8 +3,6 @@ package org.femto.jaggqlyapp.aggqly.expressions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 public class JoinEmitter implements NodeVisitor<JoinFunction> {
     public JoinFunction emit(List<TopLevelAstNode> nodes) {
         var innerGetters = nodes
@@ -47,7 +45,7 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
 
     @Override
     public JoinFunction visit(TTableCollectionNode node) {
-        throw new NotImplementedException();
+        throw new RuntimeException();
     }
 
     @Override
@@ -58,7 +56,7 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
 
     @Override
     public JoinFunction visit(MTableCollectionNode node) {
-        throw new NotImplementedException();
+        throw new RuntimeException();
     }
 
     @Override

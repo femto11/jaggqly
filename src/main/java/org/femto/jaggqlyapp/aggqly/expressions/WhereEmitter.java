@@ -2,8 +2,6 @@ package org.femto.jaggqlyapp.aggqly.expressions;
 
 import java.util.List;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 public class WhereEmitter implements NodeVisitor<WhereFunction> {
     public WhereFunction emit(List<TopLevelAstNode> nodes) {
         var innerGetters = nodes
@@ -54,17 +52,17 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
 
     @Override
     public WhereFunction visit(LTableCollectionNode node) {
-        throw new NotImplementedException();
+        throw new RuntimeException();
     }
 
     @Override
     public WhereFunction visit(MTableCollectionNode node) {
-        throw new NotImplementedException();
+        throw new RuntimeException();
     }
 
     @Override
     public WhereFunction visit(RTableCollectionNode node) {
-        throw new NotImplementedException();
+        throw new RuntimeException();
     }
 
     @Override

@@ -1,6 +1,12 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp;
 
 import java.util.List;
+
+import org.femto.jaggqlyapp.aggqly.AggqlyColumn;
+import org.femto.jaggqlyapp.aggqly.AggqlyJoin;
+import org.femto.jaggqlyapp.aggqly.AggqlyJunction;
+import org.femto.jaggqlyapp.aggqly.AggqlyRoot;
+import org.femto.jaggqlyapp.aggqly.AggqlyType;
 
 @AggqlyType(name = "Review", table = "")
 interface Review {
@@ -19,7 +25,7 @@ interface ShortReview extends Review {
     Integer rating();
 }
 
-@AggqlyType(name = "Show", table = "show")
+@AggqlyType(name = "Show", table = "show", schema = "dbo")
 interface Show {
     String title();
 

@@ -1,6 +1,5 @@
 package org.femto.jaggqlyapp.aggqly;
 
-import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.femto.jaggqlyapp.aggqly.execution.AstNode;
 import org.femto.jaggqlyapp.aggqly.execution.ColumnNode;
 import org.femto.jaggqlyapp.aggqly.execution.DeathNode;
@@ -17,9 +15,7 @@ import org.femto.jaggqlyapp.aggqly.execution.InterfaceNode;
 import org.femto.jaggqlyapp.aggqly.execution.JoinNode;
 import org.femto.jaggqlyapp.aggqly.execution.NullNode;
 import org.femto.jaggqlyapp.aggqly.execution.SelectNode;
-import org.femto.jaggqlyapp.aggqly.execution.SqlGenerator;
 import org.femto.jaggqlyapp.aggqly.execution.TSqlGenerator;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +34,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.SelectedField;
+import graphql.util.Pair;
 
 @Component
 public class Aggqly {
@@ -55,9 +52,9 @@ public class Aggqly {
 
         final var generator = new TSqlGenerator();
 
-        final var sql = parseResult.getLeft().accept(generator).statement();
+        final var sql = parseResult.first.accept(generator).statement();
 
-        return Pair.of(sql, parseResult.getRight());
+        return Pair.pair(sql, parseResult.second);
     }
 
     private class Parser {
@@ -97,7 +94,7 @@ public class Aggqly {
             var selectNode = parseSelect(0, returnType, this.dfe.getArguments(), this.dfe.getSelectionSet(),
                     aggqlyField.getWhere(), orderBy);
 
-            return Pair.of(selectNode, Collections.unmodifiableMap(this.registeredParameters));
+            return Pair.pair(selectNode, Collections.unmodifiableMap(this.registeredParameters));
         }
 
         private static ExecutableNormalizedField doHack(SelectedField sf) {

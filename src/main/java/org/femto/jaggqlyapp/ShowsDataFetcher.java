@@ -4,44 +4,59 @@ import java.util.List;
 import org.femto.jaggqlyapp.aggqly.Aggqly;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsQuery;
 import graphql.schema.DataFetchingEnvironment;
 
+import org.femto.jaggqlyapp.codegen.types.Show;
+
 @DgsComponent
 public class ShowsDataFetcher {
+
+  record Review(String text) {
+  }
+
+  // record Show(String title, int releaseYear, List<Review> reviews) {
+  // }
 
   @Autowired
   Aggqly aggqly;
 
-  private final List<Show> shows = List.of(
-      new Show("Stranger Things", 2016, List.of()),
-      new Show("Ozark", 2017, List.of()),
-      new Show("The Crown", 2016, List.of()),
-      new Show("Dead to Me", 2019, List.of()),
-      new Show("Orange is the New Black", 2013, List.of()));
-
   @DgsQuery
-  public List<Object> categories(DataFetchingEnvironment dfe) {
+  public List<Show> categories(DataFetchingEnvironment dfe) {
     System.out.println(this.aggqly.execute(dfe));
+
     return List.of();
   }
 
   @DgsQuery
   public List<Show> shows(DataFetchingEnvironment dfe) {
-    System.out.println(this.aggqly.execute(dfe));
-    return shows;
+    final var a = this.aggqly.execute(dfe);
+
+    System.out.println(a);
+
+    var json = "[{\"title\":\"Stranger Things\",\"releaseYear\":2016,\"actors\":[{\"name\":\"Joyce Beyers\"},{\"name\":\"Holly Wheeler\"}]},{\"title\":\"Ozark\",\"releaseYear\":2017,\"actors\":[{\"name\":\"Jason Bateman\"}]}]";
+
+    final var mapper = new ObjectMapper();
+
+    try {
+      final var shows = mapper.readValue(json, new TypeReference<List<Show>>() {
+      });
+
+      return shows;
+    } catch (JsonProcessingException e) {
+
+    }
+    return List.of();
   }
 
   @DgsQuery
   public Show show(DataFetchingEnvironment dfe) {
     System.out.println(this.aggqly.execute(dfe));
-    return shows.get(0);
+    return null;
   }
-}
-
-record Review(String text) {
-}
-
-record Show(String title, int releaseYear, List<Review> reviews) {
 }
