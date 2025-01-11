@@ -12,7 +12,7 @@ public interface JoinFunction {
 
     public static JoinFunction fromExpression(String s) throws ParserException {
         final var tokens = new Lexer().tokenize(s);
-        final var nodes = new Parser().parse(new TokenStream(tokens));
+        final var nodes = new Parser(ParserMode.JOIN_EXPRESSION).parse(new TokenStream(tokens));
         return new JoinEmitter().emit(nodes);
     }
 }

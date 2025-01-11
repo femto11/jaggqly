@@ -8,7 +8,7 @@ public interface WhereFunction {
 
     static WhereFunction fromExpression(String s) throws ParserException {
         final var tokens = new Lexer().tokenize(s);
-        final var nodes = new Parser().parse(new TokenStream(tokens));
+        final var nodes = new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens));
         return new WhereEmitter().emit(nodes);
     }
 }

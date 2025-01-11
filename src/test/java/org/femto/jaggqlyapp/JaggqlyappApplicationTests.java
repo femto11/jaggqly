@@ -1,11 +1,15 @@
 package org.femto.jaggqlyapp;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.Map;
 
 import org.femto.jaggqlyapp.aggqly.AggqlyDataLoaders;
 import org.femto.jaggqlyapp.aggqly.expressions.JoinEmitter;
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
 import org.femto.jaggqlyapp.aggqly.expressions.Parser;
+import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
+import org.femto.jaggqlyapp.aggqly.expressions.ParserMode;
 import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
 import org.femto.jaggqlyapp.aggqly.impl.JoinExpressionImpl;
 import org.junit.jupiter.api.Test;
@@ -24,26 +28,25 @@ class JaggqlyappApplicationTests {
 	private DgsQueryExecutor dgsQueryExecutor;
 
 	@Test
-	void contextLoads() {
-		var c = ctx.containsBean("aggqlyDataLoaders");
-		var x = ctx.getBean("aggqlyDataLoaders", AggqlyDataLoaders.class);
+	void ancestorAccess() {
+		String input = "{!t.$.$(id)} = {!arg(id)}";
+		var lexer = new Lexer();
+		final var tokens1 = lexer.tokenize(input);
+		var nodes = new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens1));
 
-		var e = JoinExpressionImpl.fromString("""
-				/{l:right_id} = /{r:id}
-				AND /{l:age} < /{arg:$.$.age}
-				""");
-
-		var sql = e.method("ltab", "rtab", Map.of("age", ":age_1"), Map.of());
-
-		System.out.println(sql);
+		input = "{!ctx.$.$(id)} = {!arg(id)}";
+		lexer = new Lexer();
+		final var tokens2 = lexer.tokenize(input);
+		assertThrows(ParserException.class,
+				() -> new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens2)));
 	}
 
 	@Test
 	void expressionParser() {
-		String input = "{!l(id)} = {!arg(id)} {?ctx(context) AND {!l(something)} = {!ctx(context)}}";
+		String input = "{!t(id)} = {!arg(id)} {?ctx(context) AND {!t(something)} = {!ctx(context)}}";
 		var lexer = new Lexer();
 		var tokens = lexer.tokenize(input);
-		var nodes = new Parser().parse(new TokenStream(tokens));
+		var nodes = new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens));
 		var expression = new JoinEmitter().emit(nodes);
 
 		var x = expression.get("ltab", "rtab", Map.of("id", "1"), Map.of());

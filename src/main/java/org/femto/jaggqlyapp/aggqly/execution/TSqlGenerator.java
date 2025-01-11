@@ -12,7 +12,11 @@ public class TSqlGenerator implements SqlGenerator {
 
     @Override
     public Generated generate(SelectNode node) {
-        final var nodes = Generated.normalize(node.selections().stream().map(n -> n.accept(this)).toList());
+        final var nodes = Generated.normalize(
+                node.selections()
+                        .stream()
+                        .map(n -> n.accept(this))
+                        .toList());
 
         var wherePart = node.where().isPresent() ? "WHERE " + node.where().get() + " " : "";
 
@@ -36,12 +40,12 @@ public class TSqlGenerator implements SqlGenerator {
 
     @Override
     public Generated generate(InterfaceNode node) {
-        final var selectStatements = node.selectNodes()
+        final var union = node.selectNodes()
                 .stream()
                 .map(n -> n.accept(this).statement())
-                .toList();
+                .collect(Collectors.joining(" UNION "));
 
-        return new Generated(String.join(" UNION ", selectStatements) + " " + node.alias() + " ", "", "");
+        return new Generated(union + " " + node.alias() + " ", "", "");
     }
 
     @Override

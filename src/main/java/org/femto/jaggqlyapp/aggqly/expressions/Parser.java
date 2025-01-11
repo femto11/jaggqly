@@ -1,7 +1,9 @@
 package org.femto.jaggqlyapp.aggqly.expressions;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer.Token;
 
@@ -96,7 +98,29 @@ record FragmentNode(CharSequence text) implements TopLevelAstNode {
 }
 
 public class Parser {
+    private static final Map<TokenKind, EnumSet<ParserMode>> isCollectionAvailable = Map.of(
+            TokenKind.T, EnumSet.allOf(ParserMode.class),
+            TokenKind.L, EnumSet.allOf(ParserMode.class),
+            TokenKind.M, EnumSet.of(ParserMode.JUNCTION_EXPRESSION),
+            TokenKind.R, EnumSet.of(ParserMode.JOIN_EXPRESSION, ParserMode.JUNCTION_EXPRESSION),
+            TokenKind.ARG, EnumSet.allOf(ParserMode.class),
+            TokenKind.CTX, EnumSet.allOf(ParserMode.class));
+
+    private static final Map<TokenKind, Boolean> isLadderCollection = Map.of(
+            TokenKind.T, true,
+            TokenKind.L, true,
+            TokenKind.M, false,
+            TokenKind.R, false,
+            TokenKind.ARG, true,
+            TokenKind.CTX, false);
+
     private TokenStream stream;
+
+    private final ParserMode mode;
+
+    public Parser(ParserMode mode) {
+        this.mode = mode;
+    }
 
     public List<TopLevelAstNode> parse(TokenStream tokens) throws ParserException {
         this.stream = tokens;
@@ -185,7 +209,40 @@ public class Parser {
             throw new ParserException("Expected COLLECTION but got " + token.kind());
         }
 
+        if (!isCollectionAvailable.get(token.kind()).contains(this.mode)) {
+            throw new ParserException(token.kind() + " not allowed in " + this.mode);
+        }
+
         final var collection = this.stream.eat().kind();
+
+        // {!l.$.$(foo)} | {!arg.$.$(bar)}
+        // (EXCLAMATIONMARK | QUESTIONMARK) COLLECTION (.$)* OPENPAREN ...
+
+        var lookbacks = 0;
+        while (true) {
+            if (this.stream.peek(lookbacks * 2).kind() != TokenKind.DOT) {
+                if (this.stream.peek().kind() == TokenKind.DOLLAR) {
+                    throw new ParserException(
+                            "Incomplete ancestor access expression. Expected DOT but got DOLLAR");
+                }
+
+                break;
+            }
+
+            if (this.stream.peek(lookbacks * 2 + 1).kind() != TokenKind.DOLLAR) {
+                throw new ParserException(
+                        "Incomplete ancestor access expression. Expected DOLLAR but got " + this.stream.peek(2).kind());
+            }
+
+            ++lookbacks;
+        }
+
+        if (lookbacks > 0 && !isLadderCollection.get(collection)) {
+            throw new ParserException(
+                    "Illegal ancestor access on " + collection);
+        }
+
+        this.stream.eat(lookbacks * 2);
 
         token = this.stream.peek();
         if (token.kind() != TokenKind.OPENPAREN) {

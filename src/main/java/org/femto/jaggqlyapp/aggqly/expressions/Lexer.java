@@ -53,8 +53,8 @@ public class Lexer {
             Map.entry(TokenKind.R, LexerContext.Directive),
             Map.entry(TokenKind.ARG, LexerContext.Directive),
             Map.entry(TokenKind.CTX, LexerContext.Directive),
-            Map.entry(TokenKind.DOT, LexerContext.Identifier),
-            Map.entry(TokenKind.DOLLAR, LexerContext.Identifier),
+            Map.entry(TokenKind.DOT, LexerContext.Directive),
+            Map.entry(TokenKind.DOLLAR, LexerContext.Directive),
             Map.entry(TokenKind.IDENTIFIER, LexerContext.Directive));
 
     public List<Token> tokenize(String expression) {
@@ -203,6 +203,12 @@ public class Lexer {
                     return new Token(TokenKind.R, TokenClass.COLLECTION, null);
                 }
                 break;
+            case '.':
+                stream.eat();
+                return new Token(TokenKind.DOT, TokenClass.NOTAPPLICABLE, null);
+            case '$':
+                stream.eat();
+                return new Token(TokenKind.DOLLAR, TokenClass.NOTAPPLICABLE, null);
         }
 
         return null;
