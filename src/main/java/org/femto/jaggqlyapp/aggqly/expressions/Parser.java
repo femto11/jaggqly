@@ -41,14 +41,14 @@ interface CollectionNode extends DirectiveNode {
     String member();
 }
 
-record TTableCollectionNode(String member) implements CollectionNode {
+record TTableCollectionNode(String member, int lookback) implements CollectionNode {
     @Override
     public <T> T accept(NodeVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }
 
-record LTableCollectionNode(String member) implements CollectionNode {
+record LTableCollectionNode(String member, int lookback) implements CollectionNode {
     @Override
     public <T> T accept(NodeVisitor<T> visitor) {
         return visitor.visit(this);
@@ -69,7 +69,7 @@ record RTableCollectionNode(String member) implements CollectionNode {
     }
 }
 
-record ArgCollectionNode(String member) implements CollectionNode {
+record ArgCollectionNode(String member, int lookback) implements CollectionNode {
     @Override
     public <T> T accept(NodeVisitor<T> visitor) {
         return visitor.visit(this);
@@ -98,21 +98,17 @@ record FragmentNode(CharSequence text) implements TopLevelAstNode {
 }
 
 public class Parser {
-    private static final Map<TokenKind, EnumSet<ParserMode>> isCollectionAvailable = Map.of(
-            TokenKind.T, EnumSet.allOf(ParserMode.class),
-            TokenKind.L, EnumSet.allOf(ParserMode.class),
-            TokenKind.M, EnumSet.of(ParserMode.JUNCTION_EXPRESSION),
-            TokenKind.R, EnumSet.of(ParserMode.JOIN_EXPRESSION, ParserMode.JUNCTION_EXPRESSION),
-            TokenKind.ARG, EnumSet.allOf(ParserMode.class),
-            TokenKind.CTX, EnumSet.allOf(ParserMode.class));
+    private record CollectionTokenInfo(EnumSet<ParserMode> availableIn, Boolean supportsAncestorAcesss) {
+    }
 
-    private static final Map<TokenKind, Boolean> isLadderCollection = Map.of(
-            TokenKind.T, true,
-            TokenKind.L, true,
-            TokenKind.M, false,
-            TokenKind.R, false,
-            TokenKind.ARG, true,
-            TokenKind.CTX, false);
+    private static final Map<TokenKind, CollectionTokenInfo> collectionTokenInfos = Map.of(
+            TokenKind.T, new CollectionTokenInfo(EnumSet.allOf(ParserMode.class), true),
+            TokenKind.L, new CollectionTokenInfo(EnumSet.allOf(ParserMode.class), false),
+            TokenKind.M, new CollectionTokenInfo(EnumSet.of(ParserMode.JUNCTION_EXPRESSION), false),
+            TokenKind.R,
+            new CollectionTokenInfo(EnumSet.of(ParserMode.JOIN_EXPRESSION, ParserMode.JUNCTION_EXPRESSION), false),
+            TokenKind.ARG, new CollectionTokenInfo(EnumSet.allOf(ParserMode.class), true),
+            TokenKind.CTX, new CollectionTokenInfo(EnumSet.allOf(ParserMode.class), false));
 
     private TokenStream stream;
 
@@ -209,7 +205,9 @@ public class Parser {
             throw new ParserException("Expected COLLECTION but got " + token.kind());
         }
 
-        if (!isCollectionAvailable.get(token.kind()).contains(this.mode)) {
+        final var collectionTokenInfo = collectionTokenInfos.get(token.kind());
+
+        if (!collectionTokenInfo.availableIn().contains(this.mode)) {
             throw new ParserException(token.kind() + " not allowed in " + this.mode);
         }
 
@@ -237,7 +235,7 @@ public class Parser {
             ++lookbacks;
         }
 
-        if (lookbacks > 0 && !isLadderCollection.get(collection)) {
+        if (lookbacks > 0 && !collectionTokenInfo.supportsAncestorAcesss) {
             throw new ParserException(
                     "Illegal ancestor access on " + collection);
         }
@@ -266,13 +264,20 @@ public class Parser {
         this.stream.eat();
 
         return switch (collection) {
-            case TokenKind.T -> new TTableCollectionNode(member);
-            case TokenKind.L -> new LTableCollectionNode(member);
+            case TokenKind.T -> new TTableCollectionNode(member, lookbacks);
+            case TokenKind.L -> new LTableCollectionNode(member, lookbacks);
             case TokenKind.M -> new MTableCollectionNode(member);
             case TokenKind.R -> new RTableCollectionNode(member);
-            case TokenKind.ARG -> new ArgCollectionNode(member);
+            case TokenKind.ARG -> new ArgCollectionNode(member, lookbacks);
             case TokenKind.CTX -> new CtxCollectionNode(member);
-            default -> null;
+            default -> throw new RuntimeException("Fatal. Unknown collection type for " + collection);
         };
     }
 }
+
+/*
+ * TableNode, $parent (TableNode, $parent (TableNode, null))
+ * 
+ * (TableNodWithAncestor) -> (TableNodWithAncestor) -> return TableNode
+ * 
+ */

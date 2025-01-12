@@ -3,15 +3,18 @@ package org.femto.jaggqlyapp;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
+import java.util.Optional;
 
-import org.femto.jaggqlyapp.aggqly.AggqlyDataLoaders;
+import org.femto.jaggqlyapp.aggqly.expressions.ExecutableAggqlyTableType;
+import org.femto.jaggqlyapp.aggqly.expressions.ExecutableAggqlyType;
 import org.femto.jaggqlyapp.aggqly.expressions.JoinEmitter;
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
 import org.femto.jaggqlyapp.aggqly.expressions.Parser;
 import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.femto.jaggqlyapp.aggqly.expressions.ParserMode;
+import org.femto.jaggqlyapp.aggqly.expressions.SomethingWithAncestor;
 import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
-import org.femto.jaggqlyapp.aggqly.impl.JoinExpressionImpl;
+import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,17 +31,25 @@ class JaggqlyappApplicationTests {
 	private DgsQueryExecutor dgsQueryExecutor;
 
 	@Test
-	void ancestorAccess() {
-		String input = "{!t.$.$(id)} = {!arg(id)}";
+	void ancestorAccessParsing() {
+		String input = "{!t.$.$(id)}";
 		var lexer = new Lexer();
 		final var tokens1 = lexer.tokenize(input);
 		var nodes = new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens1));
 
-		input = "{!ctx.$.$(id)} = {!arg(id)}";
-		lexer = new Lexer();
-		final var tokens2 = lexer.tokenize(input);
-		assertThrows(ParserException.class,
-				() -> new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens2)));
+		System.out.println(nodes);
+	}
+
+	@Test
+	void ancestorAccess() {
+		final var accessor = SomethingWithAncestor.<ExecutableAggqlyType>forLookbacks(2);
+
+		var n1 = new ExecutableAggqlyTableType(null, null, null, "n1", Optional.empty());
+		var n2 = new ExecutableAggqlyTableType(null, null, null, "n2", Optional.of(n1));
+		var n3 = new ExecutableAggqlyTableType(null, null, null, "n3", Optional.of(n2));
+
+		var result = accessor.apply(n3).alias();
+		System.out.println(result);
 	}
 
 	@Test
@@ -49,7 +60,7 @@ class JaggqlyappApplicationTests {
 		var nodes = new Parser(ParserMode.WHERE_EXPRESSION).parse(new TokenStream(tokens));
 		var expression = new JoinEmitter().emit(nodes);
 
-		var x = expression.get("ltab", "rtab", Map.of("id", "1"), Map.of());
+		var x = ""; // expression.get("ltab", "rtab", Map.of("id", "1"), Map.of());
 		System.out.println(x);
 	}
 

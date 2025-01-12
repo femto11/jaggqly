@@ -24,10 +24,10 @@ ext {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	//implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'com.netflix.graphql.dgs:graphql-dgs-spring-graphql-starter'
 	implementation 'com.netflix.graphql.dgs:graphql-dgs-pagination:latest.release'
-	implementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '12.8.1.jre8'
+	implementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '12.8.1.jre11'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'com.netflix.graphql.dgs:graphql-dgs-spring-graphql-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

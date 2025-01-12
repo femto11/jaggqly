@@ -4,9 +4,10 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface JoinFunction {
-    String get(String l, String r, Map<String, String> args, Map<String, String> ctx);
+    String get(ExecutableAggqlyType l, ExecutableAggqlyType r, Map<String, String> args,
+            Map<String, String> ctx);
 
-    default WhereFunction reduce(String l) {
+    default WhereFunction reduce(ExecutableAggqlyType l) {
         return (r, args, ctx) -> this.get(l, r, args, ctx);
     }
 

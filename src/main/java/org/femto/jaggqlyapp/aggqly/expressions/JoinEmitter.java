@@ -51,7 +51,9 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
     @Override
     @SuppressWarnings("unused")
     public JoinFunction visit(LTableCollectionNode node) {
-        return (l, r, args, ctx) -> l + "." + node.member();
+        final var accessor = SomethingWithAncestor.<ExecutableAggqlyType>forLookbacks(node.lookback());
+
+        return (l, r, args, ctx) -> accessor.apply(l).alias() + "." + node.member();
     }
 
     @Override
@@ -62,7 +64,7 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
     @Override
     @SuppressWarnings("unused")
     public JoinFunction visit(RTableCollectionNode node) {
-        return (l, r, args, ctx) -> r + "." + node.member();
+        return (l, r, args, ctx) -> r.alias() + "." + node.member();
     }
 
     @Override

@@ -41,6 +41,9 @@ public class ShowsDataFetcher {
 
     var json = "[{\"title\":\"Stranger Things\",\"releaseYear\":2016,\"actors\":[{\"name\":\"Joyce Beyers\"},{\"name\":\"Holly Wheeler\"}]},{\"title\":\"Ozark\",\"releaseYear\":2017,\"actors\":[{\"name\":\"Jason Bateman\"}]}]";
 
+    // var db = new DbFetcher();
+    // db.fetch(a.first);
+
     final var mapper = new ObjectMapper();
 
     try {

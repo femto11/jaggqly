@@ -2,7 +2,7 @@ package org.femto.jaggqlyapp.aggqly;
 
 import java.util.Optional;
 
-import org.femto.jaggqlyapp.aggqly.impl.WhereExpressionImpl;
+import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
 
 public final class RootField implements AggqlyField {
     public static RootField fromName(String name) {
@@ -11,16 +11,16 @@ public final class RootField implements AggqlyField {
 
     public static RootField fromAnnotation(String name, AggqlyRoot annotation) {
         final var where = !annotation.where().isEmpty()
-                ? new WhereExpressionImpl(annotation.where())
+                ? WhereFunction.fromExpression(annotation.where())
                 : null;
 
         return new RootField(name, where);
     }
 
     public final String name;
-    public final WhereExpression where;
+    public final WhereFunction where;
 
-    private RootField(String name, WhereExpression where) {
+    private RootField(String name, WhereFunction where) {
         this.name = name;
         this.where = where;
     }
@@ -29,7 +29,7 @@ public final class RootField implements AggqlyField {
         return this.name;
     }
 
-    public WhereExpression getWhere() {
+    public WhereFunction getWhere() {
         return this.where;
     }
 

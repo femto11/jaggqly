@@ -182,7 +182,7 @@ public class Lexer {
             case 't':
                 if (!Character.isLetterOrDigit(stream.peek(1))) {
                     stream.eat();
-                    return new Token(TokenKind.L, TokenClass.COLLECTION, null);
+                    return new Token(TokenKind.T, TokenClass.COLLECTION, null);
                 }
                 break;
             case 'l':

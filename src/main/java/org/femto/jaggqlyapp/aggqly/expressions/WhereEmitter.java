@@ -47,7 +47,9 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
     @Override
     @SuppressWarnings("unused")
     public WhereFunction visit(TTableCollectionNode node) {
-        return (t, args, ctx) -> t + "." + node.member();
+        final var accessor = SomethingWithAncestor.<ExecutableAggqlyType>forLookbacks(node.lookback());
+
+        return (t, args, ctx) -> accessor.apply(t).alias() + "." + node.member();
     }
 
     @Override
