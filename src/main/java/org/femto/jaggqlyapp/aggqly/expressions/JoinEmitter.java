@@ -70,7 +70,9 @@ public class JoinEmitter implements NodeVisitor<JoinFunction> {
     @Override
     @SuppressWarnings("unused")
     public JoinFunction visit(ArgCollectionNode node) {
-        return (l, r, args, ctx) -> args.get(node.member());
+        final var getter = SomethingWithAncestor.<MapWithAncestor<String, String>>forLookbacks(node.lookback());
+
+        return (l, r, args, ctx) -> getter.apply(args).get(node.member());
     }
 
     @Override

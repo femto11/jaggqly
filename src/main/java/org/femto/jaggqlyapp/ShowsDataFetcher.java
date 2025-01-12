@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.graphql.dgs.DgsComponent;
+import com.netflix.graphql.dgs.DgsData;
 import com.netflix.graphql.dgs.DgsQuery;
 import graphql.schema.DataFetchingEnvironment;
 
@@ -55,6 +55,13 @@ public class ShowsDataFetcher {
 
     }
     return List.of();
+  }
+
+  @DgsData(parentType = "Show", field = "actors")
+  public List<org.femto.jaggqlyapp.codegen.types.Actor> actors(DataFetchingEnvironment dfe) {
+    var s = (Show) dfe.getSource();
+
+    return s.getActors();
   }
 
   @DgsQuery

@@ -4,7 +4,7 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface JoinFunction {
-    String get(ExecutableAggqlyType l, ExecutableAggqlyType r, Map<String, String> args,
+    String get(ExecutableAggqlyType l, ExecutableAggqlyType r, MapWithAncestor<String, String> args,
             Map<String, String> ctx);
 
     default WhereFunction reduce(ExecutableAggqlyType l) {

@@ -90,7 +90,7 @@ interface DirectiveNode extends TopLevelAstNode {
 
 }
 
-record FragmentNode(CharSequence text) implements TopLevelAstNode {
+record FragmentNode(String text) implements TopLevelAstNode {
     @Override
     public <T> T accept(NodeVisitor<T> visitor) {
         return visitor.visit(this);
@@ -126,6 +126,10 @@ public class Parser {
         return nodes;
     }
 
+    private static String removeRedundantCharacters(String source) {
+        return source.replace("\n", " ").replace("\r", " ").replaceAll("\\s+", " ");
+    }
+
     // (text | directive)*
     private List<TopLevelAstNode> parseExpression() throws ParserException {
         var nodes = new ArrayList<TopLevelAstNode>();
@@ -133,7 +137,7 @@ public class Parser {
         while (true) {
             switch (this.stream.peek().kind()) {
                 case TokenKind.TEXT: {
-                    nodes.add(new FragmentNode(this.stream.eat().text()));
+                    nodes.add(new FragmentNode(removeRedundantCharacters(this.stream.eat().text().toString())));
                     break;
                 }
                 case TokenKind.OPENCURLY: {

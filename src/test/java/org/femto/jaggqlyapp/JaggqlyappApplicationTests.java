@@ -1,7 +1,5 @@
 package org.femto.jaggqlyapp;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.Map;
 import java.util.Optional;
 
@@ -10,11 +8,9 @@ import org.femto.jaggqlyapp.aggqly.expressions.ExecutableAggqlyType;
 import org.femto.jaggqlyapp.aggqly.expressions.JoinEmitter;
 import org.femto.jaggqlyapp.aggqly.expressions.Lexer;
 import org.femto.jaggqlyapp.aggqly.expressions.Parser;
-import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.femto.jaggqlyapp.aggqly.expressions.ParserMode;
 import org.femto.jaggqlyapp.aggqly.expressions.SomethingWithAncestor;
 import org.femto.jaggqlyapp.aggqly.expressions.TokenStream;
-import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

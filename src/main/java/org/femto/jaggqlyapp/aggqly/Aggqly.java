@@ -19,6 +19,7 @@ import org.femto.jaggqlyapp.aggqly.execution.TSqlGenerator;
 import org.femto.jaggqlyapp.aggqly.expressions.ExecutableAggqlyTableType;
 import org.femto.jaggqlyapp.aggqly.expressions.ExecutableAggqlyType;
 import org.femto.jaggqlyapp.aggqly.expressions.ExecutableAggqlyViewType;
+import org.femto.jaggqlyapp.aggqly.expressions.MapWithAncestor;
 import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -109,7 +110,7 @@ public class Aggqly {
             var orderBy = parseOrderByArgument(ImmutableList.copyOf(gqlField.getArguments()),
                     gqlFieldDef.getArguments());
 
-            var selectNode = parseSelect(0, Optional.empty(), returnType, this.dfe.getArguments(),
+            var selectNode = parseSelect(0, Optional.empty(), Optional.empty(), returnType, this.dfe.getArguments(),
                     this.dfe.getSelectionSet(), aggqlyField.getWhere(), orderBy);
 
             return Pair.pair(selectNode, Collections.unmodifiableMap(this.registeredParameters));
@@ -117,6 +118,7 @@ public class Aggqly {
 
         private SelectNode parseSelect(Integer level,
                 Optional<ExecutableAggqlyType> previousExecutableAggqlyType,
+                Optional<MapWithAncestor<String, String>> previousArgAliases,
                 GraphQLObjectType gqlType,
                 Map<String, Object> args,
                 DataFetchingFieldSelectionSet selectionSet, WhereFunction whereExpression,
@@ -141,7 +143,9 @@ public class Aggqly {
 
                         switch (aggqlySelectedField) {
                             case JoinField joinField -> {
-                                return this.parseJoin(level, executableAggqlyType, joinField,
+                                return this.parseJoin(level, executableAggqlyType,
+                                        previousArgAliases,
+                                        joinField,
                                         gqlField.getArguments(),
                                         gqlField.getType(),
                                         gqlField.getSelectionSet(),
@@ -149,7 +153,9 @@ public class Aggqly {
                                                 gqlField.getFieldDefinitions().getFirst().getArguments()));
                             }
                             case JunctionField junctionField -> {
-                                return this.parseJunction(level, executableAggqlyType, junctionField,
+                                return this.parseJunction(level, executableAggqlyType,
+                                        previousArgAliases,
+                                        junctionField,
                                         gqlField.getArguments(),
                                         gqlField.getType(),
                                         gqlField.getSelectionSet(),
@@ -171,14 +177,12 @@ public class Aggqly {
 
             final var argAliases = args.entrySet()
                     .stream()
-                    .map(arg -> {
-                        final var alias = this.registerParameter(level, arg.getKey(), arg.getValue());
-                        return Map.entry(arg.getKey(), alias);
-                    })
-                    .collect(Collectors.toUnmodifiableMap(x -> x.getKey(), x -> x.getValue()));
+                    .collect(Collectors.toUnmodifiableMap(x -> x.getKey(),
+                            x -> this.registerParameter(level, x.getKey(), x.getValue())));
+            final var argAliasesWithAncestor = new MapWithAncestor<String, String>(previousArgAliases, argAliases);
 
             final var whereStatement = whereExpression != null
-                    ? Optional.of(whereExpression.get(executableAggqlyType, argAliases, Map.of()))
+                    ? Optional.of(whereExpression.get(executableAggqlyType, argAliasesWithAncestor, Map.of()))
                     : Optional.<String>empty();
 
             return new SelectNode(executableAggqlyType, selectionNodes, whereStatement, orderBy);
@@ -186,6 +190,7 @@ public class Aggqly {
 
         private AstNode parseJoin(Integer level,
                 ExecutableAggqlyType executableAggqlyType,
+                Optional<MapWithAncestor<String, String>> previousArgAliases,
                 JoinField aggqlyField,
                 Map<String, Object> args,
                 GraphQLOutputType rightRawGqlType,
@@ -198,11 +203,11 @@ public class Aggqly {
 
             final AstNode selectNode = switch (unwrappedGqlType) {
                 case GraphQLInterfaceType interfaceType ->
-                    this.parseInterface(level, executableAggqlyType, interfaceType, args, selectionSet,
-                            preparedJoinExpression);
+                    this.parseInterface(level, executableAggqlyType, previousArgAliases, interfaceType, args,
+                            selectionSet, preparedJoinExpression);
                 case GraphQLObjectType objectType ->
-                    this.parseSelect(level + 1, Optional.of(executableAggqlyType), objectType, args, selectionSet,
-                            preparedJoinExpression, List.of());
+                    this.parseSelect(level + 1, Optional.of(executableAggqlyType), previousArgAliases, objectType, args,
+                            selectionSet, preparedJoinExpression, List.of());
                 default -> new DeathNode("");
             };
 
@@ -211,6 +216,7 @@ public class Aggqly {
 
         private AstNode parseJunction(Integer level,
                 ExecutableAggqlyType executableAggqlyType,
+                Optional<MapWithAncestor<String, String>> previousArgAliases,
                 JunctionField aggqlyField,
                 Map<String, Object> args,
                 GraphQLOutputType rightRawGqlType,
@@ -222,12 +228,11 @@ public class Aggqly {
 
             final AstNode selectNode = switch (unwrappedGqlType) {
                 case GraphQLInterfaceType interfaceType ->
-                    this.parseInterface(level, executableAggqlyType, interfaceType, args, selectionSet,
-                            preparedJoinExpression);
+                    this.parseInterface(level, executableAggqlyType, previousArgAliases, interfaceType, args,
+                            selectionSet, preparedJoinExpression);
                 case GraphQLObjectType objectType ->
-                    this.parseSelect(level + 1, Optional.of(executableAggqlyType), objectType, args, selectionSet,
-                            preparedJoinExpression,
-                            List.of());
+                    this.parseSelect(level + 1, Optional.of(executableAggqlyType), previousArgAliases,
+                            objectType, args, selectionSet, preparedJoinExpression, List.of());
                 default -> new DeathNode("");
             };
 
@@ -236,8 +241,10 @@ public class Aggqly {
 
         private AstNode parseInterface(Integer level,
                 ExecutableAggqlyType executableAggqlyType,
+                Optional<MapWithAncestor<String, String>> previousArgAliases,
                 GraphQLInterfaceType gqlIfType,
-                Map<String, Object> args, DataFetchingFieldSelectionSet selectionSet,
+                Map<String, Object> args,
+                DataFetchingFieldSelectionSet selectionSet,
                 WhereFunction whereExpression) {
 
             final var selectedGqlTypes = selectionSet.getFields()
@@ -247,7 +254,7 @@ public class Aggqly {
                     .collect(Collectors.toUnmodifiableSet());
 
             if (selectedGqlTypes.size() == 1) {
-                return parseSelect(level, Optional.of(executableAggqlyType),
+                return parseSelect(level, Optional.of(executableAggqlyType), previousArgAliases,
                         selectedGqlTypes.stream().findFirst().get(),
                         args, selectionSet, whereExpression, List.of());
             }
@@ -255,7 +262,7 @@ public class Aggqly {
             final var selectNodes = selectedGqlTypes
                     .stream()
                     .map(gqlType -> {
-                        return parseSelect(level, Optional.of(executableAggqlyType),
+                        return parseSelect(level, Optional.of(executableAggqlyType), previousArgAliases,
                                 gqlType, args, selectionSet, whereExpression, List.of());
                     })
                     .toList();

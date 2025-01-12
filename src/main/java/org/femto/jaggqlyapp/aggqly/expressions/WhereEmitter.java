@@ -70,7 +70,9 @@ public class WhereEmitter implements NodeVisitor<WhereFunction> {
     @Override
     @SuppressWarnings("unused")
     public WhereFunction visit(ArgCollectionNode node) {
-        return (t, args, ctx) -> args.get(node.member());
+        final var getter = SomethingWithAncestor.<MapWithAncestor<String, String>>forLookbacks(node.lookback());
+
+        return (t, args, ctx) -> getter.apply(args).get(node.member());
     }
 
     @Override

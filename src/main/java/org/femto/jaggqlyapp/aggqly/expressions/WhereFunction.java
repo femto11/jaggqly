@@ -4,7 +4,7 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface WhereFunction {
-    String get(ExecutableAggqlyType t, Map<String, String> args, Map<String, String> ctx);
+    String get(ExecutableAggqlyType t, MapWithAncestor<String, String> args, Map<String, String> ctx);
 
     static WhereFunction fromExpression(String s) throws ParserException {
         final var tokens = new Lexer().tokenize(s);
