@@ -1,4 +1,4 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema.impl;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,29 +8,29 @@ import org.jetbrains.annotations.NotNull;
 
 public final class AggqlyDataLoaders {
 
-    private Map<String, AggqlyObject> types;
+    private Map<String, AggqlyTypeImpl> types;
 
-    public AggqlyDataLoaders(Map<String, AggqlyObject> types) {
+    public AggqlyDataLoaders(Map<String, AggqlyTypeImpl> types) {
         this.types = types;
     }
 
-    public Map<String, AggqlyObject> getTypes() {
+    public Map<String, AggqlyTypeImpl> getTypes() {
         return this.types;
     }
 
-    public AggqlyObject getType(@NotNull String name) {
+    public AggqlyTypeImpl getType(@NotNull String name) {
         return this.types.get(name);
     }
 
     public static class Builder {
 
-        private HashMap<String, AggqlyObject> types;
+        private HashMap<String, AggqlyTypeImpl> types;
 
         public Builder() {
             types = new HashMap<>();
         }
 
-        public Builder type(AggqlyObject type) {
+        public Builder type(AggqlyTypeImpl type) {
             types.put(type.typeName, type);
             return this;
         }

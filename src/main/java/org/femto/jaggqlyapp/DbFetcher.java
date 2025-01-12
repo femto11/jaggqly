@@ -6,15 +6,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class DbFetcher {
 
     public void fetch(String query) {
         try {
             // 1. Load the JDBC driver
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-
+            // ;integratedSecurity=true
             // 2. Establish a connection
-            String connectionUrl = "jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=shows;integrated security=true";
+            String connectionUrl = "jdbc:sqlserver://localhost:55023;databaseName=shows;encrypt=false;integratedSecurity=true";
+
             Connection connection = DriverManager.getConnection(connectionUrl);
 
             // 3. Create a statement

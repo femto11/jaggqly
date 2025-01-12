@@ -1,24 +1,25 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema.impl;
 
 import org.femto.jaggqlyapp.aggqly.expressions.JoinFunction;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyJoin;
 import org.jetbrains.annotations.NotNull;
 
-public final class JoinField implements AggqlyField {
+final class AggqlyJoinImpl implements AggqlyField {
     private final String name;
     private JoinFunction expression;
 
-    private JoinField(
+    private AggqlyJoinImpl(
             @NotNull String name,
             @NotNull JoinFunction expression) {
         this.name = name;
         this.expression = expression;
     }
 
-    public static JoinField fromAnnotation(
+    public static AggqlyJoinImpl fromAnnotation(
             @NotNull String name,
             @NotNull AggqlyJoin annotation) {
         final var expression = JoinFunction.fromExpression(annotation.expression());
-        return new JoinField(name, expression);
+        return new AggqlyJoinImpl(name, expression);
     }
 
     @Override

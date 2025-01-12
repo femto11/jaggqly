@@ -2,11 +2,11 @@ package org.femto.jaggqlyapp;
 
 import java.util.List;
 
-import org.femto.jaggqlyapp.aggqly.AggqlyColumn;
-import org.femto.jaggqlyapp.aggqly.AggqlyJoin;
-import org.femto.jaggqlyapp.aggqly.AggqlyJunction;
-import org.femto.jaggqlyapp.aggqly.AggqlyRoot;
-import org.femto.jaggqlyapp.aggqly.AggqlyType;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyColumn;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyJoin;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyJunction;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyRoot;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyType;
 
 @AggqlyType(name = "Review", table = "")
 interface Review {

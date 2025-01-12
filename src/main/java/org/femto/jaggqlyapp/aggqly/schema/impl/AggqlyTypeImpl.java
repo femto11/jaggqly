@@ -1,4 +1,4 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema.impl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,23 +6,24 @@ import java.util.Optional;
 
 import org.femto.jaggqlyapp.aggqly.expressions.ParserException;
 import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyType;
 
-public final class AggqlyObject {
+final class AggqlyTypeImpl {
     public final String typeName;
     public final String tableName;
     public final Optional<WhereFunction> expression;
     public final Optional<String[]> selectAlwaysNames;
     public final Map<String, AggqlyField> fields;
-    private final Map<String, RootField> roots;
+    private final Map<String, AggqlyRootImpl> roots;
     private Optional<String> schemaName;
 
-    private AggqlyObject(
+    private AggqlyTypeImpl(
             String typeName,
             Optional<String> schemaName,
             String tableName,
             Optional<WhereFunction> expression,
             final Map<String, AggqlyField> fields,
-            final Map<String, RootField> roots,
+            final Map<String, AggqlyRootImpl> roots,
             Optional<String[]> selectAlwaysNames) {
         this.typeName = typeName;
         this.schemaName = schemaName;
@@ -49,7 +50,7 @@ public final class AggqlyObject {
         return this.fields.get(name);
     }
 
-    public RootField getRoot(String name) {
+    public AggqlyRootImpl getRoot(String name) {
         return this.roots.get(name);
     }
 
@@ -68,7 +69,7 @@ public final class AggqlyObject {
         private Optional<String[]> selectAlwaysNames;
         private String expression;
         private final Map<String, AggqlyField> fields;
-        private final Map<String, RootField> roots;
+        private final Map<String, AggqlyRootImpl> roots;
 
         public Builder(final String typeName) {
             this.typeName = typeName;
@@ -101,14 +102,14 @@ public final class AggqlyObject {
             return this;
         }
 
-        public Builder root(RootField field) {
+        public Builder root(AggqlyRootImpl field) {
             this.roots.put(field.getName(), field);
             return this;
         }
 
-        public AggqlyObject build() throws ParserException {
+        public AggqlyTypeImpl build() throws ParserException {
             if (this.expression.isEmpty()) {
-                return new AggqlyObject(typeName,
+                return new AggqlyTypeImpl(typeName,
                         this.schemaName.isEmpty() ? Optional.empty() : Optional.of(this.schemaName), this.tableName,
                         Optional.empty(), fields, roots,
                         selectAlwaysNames);
@@ -116,7 +117,7 @@ public final class AggqlyObject {
 
             final var function = WhereFunction.fromExpression(this.expression);
             WhereFunction thunk = (a, b, c) -> "(" + function.get(a, b, c) + ")";
-            return new AggqlyObject(typeName, Optional.empty(), this.tableName, Optional.of(thunk), fields, roots,
+            return new AggqlyTypeImpl(typeName, Optional.empty(), this.tableName, Optional.of(thunk), fields, roots,
                     selectAlwaysNames);
         }
     }

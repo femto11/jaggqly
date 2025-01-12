@@ -1,4 +1,4 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

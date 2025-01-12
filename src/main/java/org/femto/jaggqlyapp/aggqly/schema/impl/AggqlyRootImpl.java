@@ -1,26 +1,27 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema.impl;
 
 import java.util.Optional;
 
 import org.femto.jaggqlyapp.aggqly.expressions.WhereFunction;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyRoot;
 
-public final class RootField implements AggqlyField {
-    public static RootField fromName(String name) {
-        return new RootField(name, null);
+final class AggqlyRootImpl implements AggqlyField {
+    public static AggqlyRootImpl fromName(String name) {
+        return new AggqlyRootImpl(name, null);
     }
 
-    public static RootField fromAnnotation(String name, AggqlyRoot annotation) {
+    public static AggqlyRootImpl fromAnnotation(String name, AggqlyRoot annotation) {
         final var where = !annotation.where().isEmpty()
                 ? WhereFunction.fromExpression(annotation.where())
                 : null;
 
-        return new RootField(name, where);
+        return new AggqlyRootImpl(name, where);
     }
 
     public final String name;
     public final WhereFunction where;
 
-    private RootField(String name, WhereFunction where) {
+    private AggqlyRootImpl(String name, WhereFunction where) {
         this.name = name;
         this.where = where;
     }
@@ -47,8 +48,8 @@ public final class RootField implements AggqlyField {
             return this;
         }
 
-        public RootField build() {
-            return new RootField(name, null);
+        public AggqlyRootImpl build() {
+            return new AggqlyRootImpl(name, null);
         }
     }
 }

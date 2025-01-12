@@ -1,9 +1,16 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema.impl;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.femto.jaggqlyapp.aggqly.AggqlyInterfaceScan;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyColumn;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyComputed;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyJoin;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyJunction;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyRoot;
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyType;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -20,7 +27,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
-final class AggqlyInterfaceScanRegistrar
+public final class AggqlyInterfaceScanRegistrar
         implements ImportBeanDefinitionRegistrar, EnvironmentAware, ResourceLoaderAware {
     private Environment environment;
     private ResourceLoader resourceLoader;
@@ -72,12 +79,12 @@ final class AggqlyInterfaceScanRegistrar
                         continue;
                     }
 
-                    final var builder = AggqlyObject.Builder.fromAnnotation(typeConfig);
+                    final var builder = AggqlyTypeImpl.Builder.fromAnnotation(typeConfig);
 
                     for (var method : aggqlyType.getDeclaredMethods()) {
                         final var root = method.getAnnotation(AggqlyRoot.class);
                         if (root != null) {
-                            builder.root(RootField.fromAnnotation(method.getName(), root));
+                            builder.root(AggqlyRootImpl.fromAnnotation(method.getName(), root));
                         }
                     }
 
@@ -92,25 +99,25 @@ final class AggqlyInterfaceScanRegistrar
 
                                 final var join = method.getAnnotation(AggqlyJoin.class);
                                 if (join != null) {
-                                    return JoinField.fromAnnotation(method.getName(), join);
+                                    return AggqlyJoinImpl.fromAnnotation(method.getName(), join);
                                 }
 
                                 final var junction = method.getAnnotation(AggqlyJunction.class);
                                 if (junction != null) {
-                                    return JunctionField.fromAnnotation(method.getName(), junction);
+                                    return AggqlyJunctionImpl.fromAnnotation(method.getName(), junction);
                                 }
 
                                 final var computed = method.getAnnotation(AggqlyComputed.class);
                                 if (computed != null) {
-                                    return ColumnField.fromName(method.getName());
+                                    return AggqlyColumnImpl.fromName(method.getName());
                                 }
 
                                 final var column = method.getAnnotation(AggqlyColumn.class);
                                 if (column != null) {
-                                    return ColumnField.fromAnnotation(method.getName(), column);
+                                    return AggqlyColumnImpl.fromAnnotation(method.getName(), column);
                                 }
 
-                                return ColumnField.fromName(method.getName());
+                                return AggqlyColumnImpl.fromName(method.getName());
                             })
                             .forEach(field -> {
                                 builder.field(field);

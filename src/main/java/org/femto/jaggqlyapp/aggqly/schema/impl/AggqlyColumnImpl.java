@@ -1,16 +1,18 @@
-package org.femto.jaggqlyapp.aggqly;
+package org.femto.jaggqlyapp.aggqly.schema.impl;
 
-public final class ColumnField implements AggqlyField {
+import org.femto.jaggqlyapp.aggqly.schema.AggqlyColumn;
 
-    public static ColumnField fromName(String name) {
+public final class AggqlyColumnImpl implements AggqlyField {
+
+    public static AggqlyColumnImpl fromName(String name) {
         // return new ColumnField(name, (t, args, ctx) -> t + "." + name);
-        return new ColumnField(name, name);
+        return new AggqlyColumnImpl(name, name);
     }
 
-    public static ColumnField fromAnnotation(String name, AggqlyColumn annotation) {
+    public static AggqlyColumnImpl fromAnnotation(String name, AggqlyColumn annotation) {
         return annotation.column().isEmpty()
-                ? new ColumnField(name, name)
-                : new ColumnField(name, annotation.column());
+                ? new AggqlyColumnImpl(name, name)
+                : new AggqlyColumnImpl(name, annotation.column());
     }
 
     // @SuppressWarnings("unused")
@@ -28,7 +30,7 @@ public final class ColumnField implements AggqlyField {
     public final String name;
     public final String column;
 
-    private ColumnField(String name, String column) {
+    private AggqlyColumnImpl(String name, String column) {
         this.name = name;
         this.column = column;
     }

@@ -17,6 +17,9 @@ import org.femto.jaggqlyapp.codegen.types.Show;
 @DgsComponent
 public class ShowsDataFetcher {
 
+  final private Aggqly aggqly;
+  final private DbFetcher db;
+
   record Review(String text) {
   }
 
@@ -24,7 +27,10 @@ public class ShowsDataFetcher {
   // }
 
   @Autowired
-  Aggqly aggqly;
+  ShowsDataFetcher(Aggqly aggqly, DbFetcher fetcher) {
+    this.aggqly = aggqly;
+    this.db = fetcher;
+  }
 
   @DgsQuery
   public List<Show> categories(DataFetchingEnvironment dfe) {
@@ -41,8 +47,7 @@ public class ShowsDataFetcher {
 
     var json = "[{\"title\":\"Stranger Things\",\"releaseYear\":2016,\"actors\":[{\"name\":\"Joyce Beyers\"},{\"name\":\"Holly Wheeler\"}]},{\"title\":\"Ozark\",\"releaseYear\":2017,\"actors\":[{\"name\":\"Jason Bateman\"}]}]";
 
-    // var db = new DbFetcher();
-    // db.fetch(a.first);
+    db.fetch(a.first);
 
     final var mapper = new ObjectMapper();
 
