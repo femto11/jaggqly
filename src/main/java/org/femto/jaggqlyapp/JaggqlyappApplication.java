@@ -1,10 +1,10 @@
 package org.femto.jaggqlyapp;
 
-import org.femto.jaggqlyapp.aggqly.AggqlyInterfaceScan;
+import org.femto.aggqly.AggqlyInterfaceScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = { "org.femto.aggqly" })
 @AggqlyInterfaceScan({})
 public class JaggqlyappApplication {
 

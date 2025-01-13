@@ -1,7 +1,7 @@
 package org.femto.jaggqlyapp;
 
 import java.util.List;
-import org.femto.jaggqlyapp.aggqly.Aggqly;
+import org.femto.aggqly.Aggqly;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -6,7 +6,7 @@ plugins {
 	id 'antlr'
 }
 
-group = 'org.femto'
+group = 'org.femto.aggqly'
 version = '0.0.1-SNAPSHOT'
 
 java {
